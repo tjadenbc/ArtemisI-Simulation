@@ -1,0 +1,309 @@
+<title>Artemis I — Stage-by-Stage Realism Audit</title>
+<style>
+/* Realism-audit style — Artemis I. "Flight-plan / blueprint"
+   identity: ink-navy canvas, muted-gold structural accent, saturated color spent
+   only on the A/B/C/D grade ramp. System sans for prose, mono for data — no serif.
+   Plain CSS. */
+:root{
+  --canvas:#0c1622; --panel:#111f2e; --panel2:#0e1a27;
+  --border:#22364a; --border2:#2e465e;
+  --text:#d7e0ea; --muted:#8296a8; --faint:#5b7089;
+  --gold:#c9a24b; --gold-dim:rgba(201,162,75,.13);
+  --gA:#5ecb8b; --gB:#5aa9e6; --gC:#e0a33a; --gD:#d9615a;
+  --gA-bg:rgba(94,203,139,.12);  --gA-bd:rgba(94,203,139,.34);
+  --gB-bg:rgba(90,169,230,.12);  --gB-bd:rgba(90,169,230,.34);
+  --gC-bg:rgba(224,163,58,.13);  --gC-bd:rgba(224,163,58,.36);
+  --gD-bg:rgba(217,97,90,.13);   --gD-bd:rgba(217,97,90,.36);
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+  --maxw:1080px;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--canvas);color:var(--text);font-family:var(--sans);
+  line-height:1.55;-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(1100px 420px at 50% -170px, rgba(201,162,75,.06), transparent 70%),
+    linear-gradient(180deg,#0e1a28 0%,var(--canvas) 360px);
+  background-repeat:no-repeat;}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px;}
+.mono{font-family:var(--mono);}
+code{font-family:var(--mono);font-size:.82em;color:var(--gold);background:var(--gold-dim);
+  padding:1px 6px;border-radius:4px;border:1px solid rgba(201,162,75,.2);white-space:nowrap;}
+h1,h2,h3,h4{margin:0;text-wrap:balance;}
+a{color:var(--gB);}
+p{font-size:14.5px;color:var(--muted);} p strong,p b{color:var(--text);font-weight:600;}
+
+/* ---- header ---- */
+header{padding:52px 0 30px;border-bottom:1px solid var(--border);}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--gold);display:flex;align-items:center;gap:11px;}
+.eyebrow::before{content:"";width:24px;height:1px;background:var(--gold);opacity:.7;}
+h1{font-size:clamp(28px,5vw,44px);font-weight:650;letter-spacing:-.015em;margin:15px 0 0;line-height:1.05;}
+h1 .dim{color:var(--faint);font-weight:600;}
+.thesis,.lede{color:var(--muted);font-size:16.5px;max-width:68ch;margin:15px 0 0;}
+.thesis strong,.lede strong{color:var(--text);font-weight:600;}
+.stamp{display:flex;flex-wrap:wrap;gap:7px 20px;margin-top:20px;font-family:var(--mono);
+  font-size:12px;color:var(--faint);letter-spacing:.03em;}
+.stamp b{color:var(--muted);font-weight:500;}
+
+/* ---- stat band ---- */
+.stat-band{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:26px 0 0;}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:16px 17px;}
+.stat .big{font-family:var(--mono);font-size:27px;font-weight:650;letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums;}
+.stat .big.accent{color:var(--gA);}
+.stat .big span{font-size:18px;}
+.stat .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--faint);margin-top:9px;}
+.stat .sub{font-size:12.5px;color:var(--muted);margin-top:4px;}
+
+/* ---- callout / live ---- */
+.callout{background:linear-gradient(90deg,rgba(201,162,75,.06),transparent);
+  border:1px solid var(--border2);border-left:2px solid var(--gold);border-radius:9px;
+  padding:15px 18px;margin:22px 0 0;}
+.callout .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);}
+.callout h3{font-size:15px;margin:6px 0 0;}
+.callout p{margin:6px 0 0;font-size:14px;color:var(--muted);}
+
+/* ---- sections ---- */
+section{margin-top:50px;}
+.sec-head{display:flex;flex-direction:column;gap:6px;border-bottom:1px solid var(--border);padding-bottom:12px;}
+.sec-head h2{font-size:21px;font-weight:600;letter-spacing:-.01em;}
+.sec-head .aside{font-family:var(--mono);font-size:12px;color:var(--faint);}
+
+/* ---- grade legend + pills ---- */
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin:18px 0 0;font-size:13px;color:var(--muted);}
+.legend .glg{display:flex;align-items:center;gap:8px;}
+.g{font-family:var(--mono);font-weight:700;font-size:12px;padding:2px 8px;border-radius:5px;
+  border:1px solid;letter-spacing:.02em;white-space:nowrap;}
+.gA{color:var(--gA);background:var(--gA-bg);border-color:var(--gA-bd);}
+.gB{color:var(--gB);background:var(--gB-bg);border-color:var(--gB-bd);}
+.gC{color:var(--gC);background:var(--gC-bg);border-color:var(--gC-bd);}
+.gD{color:var(--gD);background:var(--gD-bg);border-color:var(--gD-bd);}
+
+/* ---- phase ribbon ---- */
+.ribbon-scroll{overflow-x:auto;margin-top:18px;padding-bottom:4px;}
+.ribbon{display:flex;gap:8px;min-width:min-content;}
+.rphase{flex:1 0 auto;min-width:82px;background:var(--panel);border:1px solid var(--border);
+  border-top:2px solid var(--border2);border-radius:8px;padding:10px 11px;}
+.rphase.aA{border-top-color:var(--gA);} .rphase.aB{border-top-color:var(--gB);}
+.rphase.aC{border-top-color:var(--gC);} .rphase.aD{border-top-color:var(--gD);}
+.rphase .rn{font-family:var(--mono);font-size:11px;color:var(--faint);}
+.rphase .rname{font-size:12px;margin-top:3px;line-height:1.25;}
+.rphase .rg{font-family:var(--mono);font-size:12px;font-weight:700;margin-top:6px;}
+.rphase.aA .rg{color:var(--gA);} .rphase.aB .rg{color:var(--gB);}
+.rphase.aC .rg{color:var(--gC);} .rphase.aD .rg{color:var(--gD);}
+
+/* ---- tables ---- */
+.tbl-scroll{overflow-x:auto;margin-top:16px;}
+table{border-collapse:collapse;width:100%;background:var(--panel);border:1px solid var(--border);
+  border-radius:10px;overflow:hidden;font-size:13.2px;}
+th,td{padding:10px 13px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top;}
+th{background:var(--panel2);font-family:var(--mono);font-weight:600;color:var(--muted);
+  font-size:11px;text-transform:uppercase;letter-spacing:.08em;}
+tr:last-child td{border-bottom:none;}
+td.num{font-family:var(--mono);color:var(--faint);font-variant-numeric:tabular-nums;}
+.stg{font-weight:600;display:block;} .fn{font-family:var(--mono);font-size:11px;color:var(--faint);display:block;margin-top:2px;}
+td.modeled,td.resid{color:var(--muted);} td.modeled b,td.resid b{color:var(--text);font-weight:600;}
+
+/* ---- backlog ---- */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:20px;}
+.col h3{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;
+  margin-bottom:13px;display:flex;align-items:center;gap:8px;}
+.col .cnt{margin-left:auto;color:var(--faint);}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+.items{display:flex;flex-direction:column;gap:9px;}
+.item{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:11px 13px;
+  font-size:13px;display:flex;gap:10px;}
+.item .id{font-family:var(--mono);font-size:11px;color:var(--gold);flex:none;padding-top:1px;}
+.item .tx{color:var(--muted);} .item .tx b{color:var(--text);font-weight:600;}
+.item .note{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:4px;}
+
+/* ---- two-column panel (guardrail / losses) ---- */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px;}
+.two > div{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:15px 17px;}
+.two h4{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px;color:var(--gold);}
+.two p{margin:0;font-size:13px;color:var(--muted);}
+
+/* ---- footer ---- */
+footer{margin-top:56px;border-top:1px solid var(--border);padding:22px 0 60px;
+  display:flex;justify-content:space-between;gap:16px;font-family:var(--mono);
+  font-size:12px;color:var(--faint);flex-wrap:wrap;}
+footer b{color:var(--muted);}
+
+@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  @page{margin:12mm;} body{background:var(--canvas)!important;}}
+@media (max-width:720px){.stat-band{grid-template-columns:repeat(2,1fr);}
+  .cols,.two{grid-template-columns:1fr;}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;}}
+</style>
+
+<header><div class="wrap">
+  <div class="eyebrow">Monte Carlo Fidelity Audit · Physics-Integrated</div>
+  <h1>Artemis I — Stage-by-Stage <span class="dim">Realism Audit</span></h1>
+  <p class="thesis">A numerically-integrated simulation of the first SLS Block 1 + Orion flight, flown
+    pad-to-Pacific as one continuous 25.45-day trajectory. <strong>Uncrewed → success = SLS delivers
+    Orion and Orion returns intact.</strong> Fidelity to the real mission is the primary grading axis;
+    the success estimate is secondary. Every trial genuinely
+    flies the insertion, return, and entry, so the honest ~93% is the real number.</p>
+  <div class="stamp">
+    <span>DEFINITIVE <b>final</b></span><span>n <b>10,000</b></span><span>seed <b>37</b></span>
+    <span>audited <b>2026-07-07</b></span>
+  </div>
+  <div class="stat-band">
+    <div class="stat"><div class="big accent">93.15<span>%</span></div><div class="lbl">Mission success</div><div class="sub">Wilson 92.64–93.63 · 9315/10000</div></div>
+    <div class="stat"><div class="big">4.88<span> km</span></div><div class="lbl">Splash-miss median</div><div class="sub">real ~4.7 km (matched)</div></div>
+    <div class="stat"><div class="big">4.43<span> g</span></div><div class="lbl">Entry peak-g</div><div class="sub">real ~4 g</div></div>
+    <div class="stat"><div class="big">25.46<span> d</span></div><div class="lbl">Fleet duration</div><div class="sub">real 25.45 d</div></div>
+  </div>
+  <div class="eyebrow" style="margin-top:22px">What this grades</div>
+  <h2 style="font-size:21px;font-weight:600;letter-spacing:-.01em;margin-top:6px">Faithfulness, phase by phase</h2>
+  <div class="legend">
+    <div class="glg"><span class="g gA">A</span> sourced &amp; physically flown</div>
+    <div class="glg"><span class="g gB">B</span> flown, estimate-grade inputs</div>
+    <div class="glg"><span class="g gC">C</span> abstracted stand-in</div>
+    <div class="glg"><span class="g gD">D</span> known weak point</div>
+  </div>
+</div></header>
+
+<section><div class="wrap">
+  <div class="sec-head"><div class="eyebrow">Flight profile · 12 phases</div><h2>Pad to splashdown</h2></div>
+  <div class="ribbon-scroll"><div class="ribbon">
+    <div class="rphase aA"><div class="rn">01</div><div class="rname">SLS Ascent</div><div class="rg">A−</div></div>
+    <div class="rphase aA"><div class="rn">02</div><div class="rname">PRM + TLI</div><div class="rg">A</div></div>
+    <div class="rphase aA"><div class="rn">03</div><div class="rname">Outbound + OTC</div><div class="rg">A−</div></div>
+    <div class="rphase aB"><div class="rn">04</div><div class="rname">Powered Flyby</div><div class="rg">B+</div></div>
+    <div class="rphase aB"><div class="rn">05</div><div class="rname">DRO Insertion</div><div class="rg">B+</div></div>
+    <div class="rphase aA"><div class="rn">06</div><div class="rname">DRO Coast</div><div class="rg">A</div></div>
+    <div class="rphase aB"><div class="rn">07</div><div class="rname">DRO Departure</div><div class="rg">B+</div></div>
+    <div class="rphase aB"><div class="rn">08</div><div class="rname">Return Flyby</div><div class="rg">B</div></div>
+    <div class="rphase aB"><div class="rn">09</div><div class="rname">Trans-Earth + RTC</div><div class="rg">B+</div></div>
+    <div class="rphase aA"><div class="rn">10</div><div class="rname">CM/ESM Sep</div><div class="rg">A</div></div>
+    <div class="rphase aB"><div class="rn">11</div><div class="rname">Entry</div><div class="rg">B</div></div>
+    <div class="rphase aA"><div class="rn">12</div><div class="rname">Splashdown</div><div class="rg">A−</div></div>
+  </div></div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="sec-head"><div class="eyebrow">Stage-by-stage</div><h2>What is modeled, and what remains</h2></div>
+  <div class="tbl-scroll"><table>
+    <thead><tr><th style="width:34px">#</th><th style="width:150px">Stage</th><th style="width:50px">Grade</th><th>Physically modeled</th><th>Principal residual</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td><span class="stg">SLS Ascent</span><span class="fn">phase_sls_launch</span></td><td><span class="g gA">A−</span></td>
+        <td class="modeled">True zero-AoA gravity turn → closed-loop PEG to the 30×1806 km insertion (ascending branch), with a TWO-SEGMENT linear-tangent retry (≈ real PEG’s continuous re-solve) so weak-ascent dispersions keep the nominal MECO geometry (fallback 5.9%→0.06%); 2× five-segment SRBs + 4× RS-25 @109% with the max-Q throttle bucket + 5 g limiter; USSA-76 atmosphere + Mach-Cd. <b>MECO matches real on every metric</b> (482.8 s / 156.7 km / +3.61° / 8207 m/s).</td>
+        <td class="resid">Max-Q bucket depth + pitch-ramp timing calibrated to the sourced MECO state; generic Cd curve; ~3° azimuth/frame-precision offset.</td></tr>
+      <tr><td class="num">2</td><td><span class="stg">PRM + TLI</span><span class="fn">phase_icps_prm / _tli</span></td><td><span class="g gA">A</span></td>
+        <td class="modeled">Flown two-burn ICPS: finite ~22 s PRM (41.8 m/s ≈ real 42–44) + steered ~18-min finite TLI (C3 −2.0 ≈ real); Phase-C re-aim flies the real lunar approach (asymptote ~6° off) at ΔV-neutral cost.</td>
+        <td class="resid">Post-TLI/outbound OEM path residual <b>~2,091 km</b> (zonals nominal vs the pre-zonals baked Phase-C targets — DRI-onward byte-unchanged; re-deriving recovers ~1,413); +600 kg gravity-loss allowance within gross-vs-usable uncertainty.</td></tr>
+      <tr><td class="num">3</td><td><span class="stg">Outbound + OTC</span><span class="fn">phase_outbound_coast</span></td><td><span class="g gA">A−</span></td>
+        <td class="modeled">Full 4-body (Earth+J2+J3–J6, Moon deg-8 GRAIL, Sun, SRP). Faithful OTC chain: OTC-1 OMS-E checkout (~31 m/s floor, B-plane periselene solve → CA 130.0 km) + deadband-gated OTC-2/3/4 at real GET slots, firing emergently from execution + OD-knowledge error in the real 0.2–0.9 m/s class.</td>
+        <td class="resid">Nav is now the STM-LinCov OD filter (geometry-derived); the residual is that it is LinCov-modeled, not a live sequential EKF re-solving from raw observations.</td></tr>
+      <tr><td class="num">4</td><td><span class="stg">Outbound Powered Flyby</span><span class="fn">..._powered_flyby</span></td><td><span class="g gB">B+</span></td>
+        <td class="modeled">Flown finite retrograde OMS-E burn STRADDLING periselene (centered on CA for max Oberth); fleet ΔV <b>187.3 m/s ≈ real 178.6</b> (+4.9%).</td>
+        <td class="resid">Delivery periselene ~146 km vs the 130 km B-plane target (the +16 km is the CR3BP-shape residual); remaining GET/ΔV residuals set by the DRO-model offset.</td></tr>
+      <tr><td class="num">5</td><td><span class="stg">DRO Insertion</span><span class="fn">phase_dro_insertion</span></td><td><span class="g gB">B+</span></td>
+        <td class="modeled">Trials genuinely fly to the DRO. Honest velocity-match <b>DRI 93.8 m/s ≈ real 110.6</b>, arrival at the real DRO phase / DRI GET; multi-seed branch-controlled solve.</td>
+        <td class="resid">Arrival residual ~675 km median at 10k (nominal ~20.8 km). Max-Earth is GOOD: 431,418 vs 432,194 km.</td></tr>
+      <tr><td class="num">6</td><td><span class="stg">DRO Coast</span><span class="fn">phase_dro_coast</span></td><td><span class="g gA">A</span></td>
+        <td class="modeled">Full 4-body in the Distant Retrograde Orbit; max-Earth-distance milestone tracked against the real 432,194 km.</td>
+        <td class="resid">Ballistic — the real OM-1/OM-3 orbit-maintenance burns (0.02 / 13.2 m/s) are not modeled.</td></tr>
+      <tr><td class="num">7</td><td><span class="stg">DRO Departure</span><span class="fn">phase_dro_departure</span></td><td><span class="g gB">B+</span></td>
+        <td class="modeled">Flown retrograde DDP rephased to the real ~FD15.6 epoch. Joint DDP+RPF 6×6 differential solve to the real burn family; <b>DDP 151.4 m/s</b> (= flown OM-3 13 + DRD 138.5); per-trial DRD re-opt as an ESM-prop dispersion (design 145.2 ↔ flown 151.5).</td>
+        <td class="resid">Departure DRO phase is the real one (not re-optimized per trial); the CR3BP-offset premium shows in the RPF (stage 8).</td></tr>
+      <tr><td class="num">8</td><td><span class="stg">Return Powered Flyby</span><span class="fn">_phasec_return_plan</span></td><td><span class="g gB">B</span></td>
+        <td class="modeled">Flown powered flyby on the joint-solved return; the epoch-committed PLANNED branch is the nominal path — <b>100% of successes fly it</b>. Delivers to the real EI, whence the extended-skip entry carries to the recovery zone.</td>
+        <td class="resid">Fleet RPF ~353.6 vs as-flown 292.9 — the solution-basin premium of the ~4,070 km CR3BP-mapping DRO offset (stage 5/7).</td></tr>
+      <tr><td class="num">9</td><td><span class="stg">Trans-Earth + RTC</span><span class="fn">phase_transearth_coast</span></td><td><span class="g gB">B+</span></td>
+        <td class="modeled">Flown 4-body coast; fixed-epoch EI-point return-correction chain. Return energy validated faithful — inertial EI speed 10,988 m/s ≈ real ~10,970.</td>
+        <td class="resid">Corrector nulls EI position (not the full state); entry FPA left to the delivered trajectory — the freed DOF the upstream match-polish tightens. Recovery-zone displacement ~0.02 km median.</td></tr>
+      <tr><td class="num">10</td><td><span class="stg">CM/ESM Separation</span><span class="fn">phase_cm_sm_sep</span></td><td><span class="g gA">A</span></td>
+        <td class="modeled">ESM jettison; mass → CM only; sourced masses (CM 10,400 / ESM dry 6,185 / prop 8,600 kg).</td>
+        <td class="resid">Trivial by design; sep-failure only via the sourced bolt-failure draw.</td></tr>
+      <tr><td class="num">11</td><td><span class="stg">Entry</span><span class="fn">phase_entry</span></td><td><span class="g gB">B</span></td>
+        <td class="modeled">PredGuid-class drag-tracker at Orion's shallow −5.9° corridor with bank-reversal crossrange control + lob-lift downrange trim + extended-skip long-range branch. Peak-g <b>~4.43 g ≈ real ~4 g</b>; reproduces the real TWO-PULSE skip.</td>
+        <td class="resid">The shallow corridor bottoms the first dip at ~10 km/s vs the real deep ~8–9 (the HUNTEST wall: matching the deep dip needs a steeper EI → ~10 g overstress — peak-g OR deep-dip, not both). Static USSA-76 + ±6% density + chute-wind drift.</td></tr>
+      <tr><td class="num">12</td><td><span class="stg">Splashdown</span><span class="fn">phase_entry / zone</span></td><td><span class="g gA">A−</span></td>
+        <td class="modeled">Recovery target is the AS-PLANNED off-San-Diego zone (32.30°N, 118.16°W). Nominal splashes ~0 km from the aim; <b>fleet splash-miss median 4.88 km ≈ real ~4.7 km</b>.</td>
+        <td class="resid">Splash accuracy MATCHED, floored by the faithful ~3.5 km chute-wind drift + the calibrated delivered-EI-nav residual. The as-flown Guadalupe splash (~350 km S) is a weather-retarget dispersion scenario, not the nominal. Region offset / fallback CLOSED.</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="sec-head"><div class="eyebrow">Cross-cutting foundations</div><h2>Shared physics under every stage</h2></div>
+  <div class="tbl-scroll"><table>
+    <thead><tr><th style="width:200px">Foundation</th><th style="width:50px">Grade</th><th>State &amp; key residual</th></tr></thead>
+    <tbody>
+      <tr><td><span class="stg">Time system</span></td><td><span class="g gA">A</span></td><td class="resid">UTC for GMST; ΔT/TT (Meeus on TT = UTC + 69.184 s). Smoking-gun: OEM-derived flyby periselene 72 → 133 km ≈ real ~130.</td></tr>
+      <tr><td><span class="stg">Ephemeris</span></td><td><span class="g gA">A−</span></td><td class="resid">Meeus lunar series (&lt;1″), analytic Sun. Dominant error was the frame offset (now corrected), not the series.</td></tr>
+      <tr><td><span class="stg">Reference frames</span></td><td><span class="g gB">B+</span></td><td class="resid">ECI = equatorial, true-equinox-of-date, self-consistent. The J2000 OEM is compared through the full IAU transform (precession + IAU-1980 nutation) → the raw ~2,044 km frame offset collapses to a true ~83 km path residual at the flyby CA. Boundary OEM residuals are genuine PATH differences, not frame.</td></tr>
+      <tr><td><span class="stg">Moon-fixed frame</span></td><td><span class="g gA">A−</span></td><td class="resid">The FULL IAU/WGCCRE-2009 lunar rotation series (pole 8, Dec 9, W 14 terms, all 13 libration args E1–E13) wired into the degree-8 field. Sub-arcmin is the analytic ceiling, not a truncation.</td></tr>
+      <tr><td><span class="stg">Force model</span></td><td><span class="g gA">A−</span></td><td class="resid">Earth (point + J2 + <b>J3–J6 zonals</b>, near-Earth gated), Moon (deg-8 GRGM1200A GRAIL), Sun third-body, <b>SRP default-ON</b>. J3–J6 FD-verified vs the analytic J2 to 3e-12; ~0.4% of J2 at perigee; correctors absorb it (outcome-neutral).</td></tr>
+      <tr><td><span class="stg">Navigation (OD)</span></td><td><span class="g gB">B+</span></td><td class="resid"><b>STM-LinCov OD filter</b> (default-ON): emergent DSN-geometry covariance, STM-propagated so position measurements pin velocity through the dynamics, bounded by an informative prior + systematic floor. Retires the calibrated-covariance stand-in. Residual: LinCov-modeled, not a live sequential EKF.</td></tr>
+      <tr><td><span class="stg">Integrator &amp; determinism</span></td><td><span class="g gA">A</span></td><td class="resid">RK45 adaptive; sharding ≡ serial bit-identical; targeting solves RNG-free; per-trial perturbations pre-generated by index.</td></tr>
+      <tr><td><span class="stg">Success/failure accounting</span></td><td><span class="g gA">A</span></td><td class="resid">One failure per trial, strict causal order, clear definition. Verified line-by-line; three silent-ignore accounting bugs found &amp; fixed.</td></tr>
+      <tr><td><span class="stg">Validation vs the OEM</span></td><td><span class="g gB">B</span></td><td class="resid">Per-stage residual gauge (full precession + nutation). Residuals: outbound/OPF ~2,091 (zonals-nominal vs pre-zonals targets), DRI ~2,789, DRO/DDP ~4,063, return/RPF ~122, EI ~169 km; timeline closes at 25.44 d ≈ real 25.45.</td></tr>
+    </tbody>
+  </table></div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="sec-head"><div class="eyebrow">Failure model · estimate-grade</div><h2>Where the losses come from</h2></div>
+  <p>All failure-mode probabilities are ESTIMATES — Artemis has flown twice (I 2022, II 2026), both successful,
+    no statistical base; triangulated from heritage reliabilities + NASA PRA targets + foreseeable-problem
+    analysis. Of the 6.85% failing (n=10,000), ~1.4 pp is the honest insertion/return dispersion tail
+    (genuinely-hot dispersed trajectories — a flexible-insertion sweep confirms no affordable rescue exists),
+    ~5.5 pp is sourced hardware/systems.</p>
+  <div class="two">
+    <div><h4>Insertion / return dispersion · ~1.4%</h4><p>DRI propellant depletion 0.73 · RPF depletion 0.45 · lunar-impact 0.12 ·
+      OPF/DDP/OTC-5-6 depletion 0.09 — genuinely flown, named, and priced; the two-segment PEG retired the
+      former missed-approach (1.65) and most of the depletion tail (weak-ascent geometry, fixed at guidance).</p></div>
+    <div><h4>Sourced hardware / systems · ~5.46%</h4><p>ESM systems catastrophic 1.61 (triangulated 1/50) ·
+      OMS-E per-burn ignition ~0.87 · TLI/ICPS 0.38 · launch SRB 0.37 · parachute 0.34 · heatshield 0.31 ·
+      MMOD / avionics / nav / pressurization / RCS / thermal / SPE / max-q ~1.5.</p></div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="sec-head"><div class="eyebrow">Prioritized fidelity backlog</div><h2>What remains open</h2></div>
+  <div class="items" style="margin-top:20px">
+    <div class="item"><span class="id">◇</span><span class="tx"><b>DRO model (CR3BP vs real elliptical)</b> — the sim force model can't hold the real DRO (~63,000 km drift/6 d); RPF +60, flyby +16 accepted as CR3BP-shape residuals.<span class="note">the deepest structural wall — needs a full DRO co-design (offline optimizer)</span></span></div>
+    <div class="item"><span class="id">◇</span><span class="tx"><b>OEM-seed the outbound path</b> — re-derive the baked Phase-C targets on the zonals nominal to pull outbound ~2,091 → ~1,413 km.<span class="note">cheap refinement; DRI-onward unchanged</span></span></div>
+    <div class="item"><span class="id">◇</span><span class="tx"><b>Live sequential OD</b> — the LinCov covariance is calibrated; a live EKF re-solving from synthetic raw range/Doppler/ΔDOR is the deeper version.</span></div>
+    <div class="item"><span class="id">◇</span><span class="tx"><b>Entry deep-dip velocity</b> — unmatched at the shallow corridor (the peak-g-vs-deep-dip HUNTEST wall); model-class limit.</span></div>
+    <div class="item"><span class="id">◇</span><span class="tx"><b>Impulsive mid-mission burns</b> — OTC/DRI/DDP/RPF/RTC impulsive Δv (launch/PRM/TLI/OPF finite); fine for budgeting, slightly optimistic on cutoff dispersion.</span></div>
+    <div class="item"><span class="id">◇</span><span class="tx"><b>Lunar collision-avoidance not modeled</b> — the OTC chain trims the B-plane but has no explicit periselene-raise contingency, so the residual lunar-impact class (12/10,000; 7 marginal at 8–85 km subsurface, 5 genuinely-hot) impacts rather than burning to avoid. A real mission's mandatory avoidance would rescue the marginal ones. <span class="note">outcome ~0.03–0.07 pp — below the 10k Wilson noise (±0.5); documented + deferred, not built. PEG2 already cut this class 45→12.</span></span></div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="sec-head"><div class="eyebrow">Faithfulness guardrail</div><h2>Artemis I as-flown — no forward contamination from Artemis II / III</h2></div>
+  <p>This audit grades how faithfully the sim re-flies <strong>Artemis I specifically</strong> — the first,
+    UNCREWED flight of SLS Block 1 + ICPS + Orion on the DRO profile (LC-39B 2022-11-16 → Pacific 2022-12-11).
+    The codebase is built for multi-mission reuse (Artemis II, III, and beyond), so the standing hazard is now
+    FORWARD: later-mission hardware, trajectories, crewed systems, and — since Artemis II flew Apr 2026 — later
+    flight DATA must not contaminate the Artemis I reference. Every shared component (and any AII/AIII port) is
+    screened by a nature-vs-artifact test.</p>
+  <div class="two">
+    <div><h4>Nature — shared across all Artemis</h4><p>Gravity fields (Earth J2–J6, GRAIL lunar), ephemerides,
+      time standards (ΔT/TT), atmosphere physics, SRP, the integrator + reference frames. The same universe
+      every Artemis flies through → the best available model wins and is common infrastructure.</p></div>
+    <div><h4>Artifact — per-mission, never flows between missions</h4><p>Mission profile (I: DRO · II: free-return
+      lunar flyby · III: NRHO + HLS landing), vehicle config, guidance/nav targets, hardware constants + masses,
+      dispersion magnitudes, failure rates, recovery zones, and the SUCCESS DEFINITION. Each mission keeps its own
+      provenance-tagged config; an AII/AIII value must never bake into the AI model (or vice versa).</p></div>
+  </div>
+  <div class="items" style="margin-top:16px">
+    <div class="item"><span class="id">1</span><span class="tx"><b>Success definition stays UNCREWED.</b> Artemis I success = SLS delivers Orion AND Orion returns &amp; splashes intact — there is NO crew-survival model. A crewed AII/AIII survival layer must be mission-gated and must NOT alter the AI success definition or the AI definitive (AI stays uncrewed by construction).</span></div>
+    <div class="item"><span class="id">2</span><span class="tx"><b>Mission profile stays the DRO.</b> Artemis II's free-return lunar flyby and Artemis III's NRHO + powered lunar landing are DIFFERENT trajectories; their targets/phases (flyby geometry, NRHO insertion, descent) must not leak into the AI DRO targeting — the baked Phase-C / DRO constants are Artemis-I-specific.</span></div>
+    <div class="item"><span class="id">3</span><span class="tx"><b>Vehicle config is per-mission.</b> Artemis I is Orion + ICPS with no landing hardware; Artemis III adds the HLS (Starship) + lunar-surface systems (and Block 1B / EUS arrives on later flights). Those masses, thrust/Isp, and staging must never overwrite the AI ICPS + Orion ledger.</span></div>
+    <div class="item"><span class="id">4</span><span class="tx"><b>Failure rates + dispersions stay AI-config-sourced.</b> The AI rates are for the uncrewed Block-1 config (heritage + PRA + foreseeable). Artemis II flew successfully (Apr 2026) and III will fly, but their EMPIRICAL data is a different vehicle/mission and must NOT retroactively "correct" the AI rates — new-mission flight data informs the NEW mission's model only.</span></div>
+    <div class="item"><span class="id">5</span><span class="tx"><b>As-planned doctrine, AI-scoped.</b> The AI nominal targets the Artemis I flight PLAN; AI as-flown deviations (the weather-moved Guadalupe splash vs the planned off-San-Diego zone) live in the AI dispersion. AII/AIII plans and deviations are their own — do not conflate across missions.</span></div>
+    <div class="item"><span class="id">6</span><span class="tx"><b>Imported-material screening.</b> Material imported from another mission's model passes this same nature-vs-artifact test before adoption — nature ports, artifact stays home.</span></div>
+    <div class="item"><span class="id">7</span><span class="tx"><b>Improvements &amp; flaws flow as NOTIFICATIONS — for consideration, not silent edits.</b> The wall is on silently baking a later mission's artifact VALUE into an earlier one — NOT on knowledge. If a later Artemis (or Apollo) finds an improvement or a flaw APPLICABLE to an earlier mission — a shared-infrastructure bug, a better nature-class model, a logic error, or a technique that genuinely fits the earlier config — it MUST be surfaced for that mission's consideration. The earlier mission then screens it by the nature-vs-artifact test, verifies against its own code/record, and adopts only if it truly applies. Silence is the failure mode BOTH ways: don't contaminate, but don't sit on a fix either.</span></div>
+  </div>
+</div></section>
+
+<footer><div class="wrap" style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;width:100%">
+  <div>Artemis I Monte Carlo · definitive <b>final</b> · 10,000 · seed 37 · <b>93.15%</b> · splash 4.88 km</div>
+  <div>Grades A / B / C / D · fidelity-first</div>
+</div></footer>

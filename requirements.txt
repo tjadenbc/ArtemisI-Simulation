@@ -1,0 +1,7 @@
+# Artemis I Monte Carlo simulation — Python dependencies.
+# Developed and tested with Python 3.12 and the versions noted below;
+# the lower bounds are what the code relies on.
+numpy>=2.0        # tested 2.4.4
+scipy>=1.13       # tested 1.17.1 (solve_ivp, least_squares, brentq, fsolve)
+pandas>=2.2       # tested 3.0.2  (results I/O, stats)
+matplotlib>=3.8   # tested 3.10.8 (figures; use the "Agg" backend headless)

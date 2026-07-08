@@ -1,0 +1,22 @@
+# --- Python ---
+__pycache__/
+*.pyc
+.venv/
+venv/
+.DS_Store
+.ipynb_checkpoints/
+
+# --- Monte Carlo output ---
+# Ship only the single definitive run that the results cite. New dev runs are
+# ignored by default; add another `!outputs/<name>/` line to publish one.
+outputs/*
+!outputs/final/
+
+# Per-trial debug JSONs are bulky and regenerable; they are distributed as the
+# release asset artemis1_final_trials.tar.gz rather than committed. The per-trial
+# *results* (results.csv) are kept. Drop this line to publish the debug JSONs too.
+outputs/final/trials/
+
+# --- Release assets / build artifacts (regenerable; not tracked) ---
+*.tar.gz
+*.pdf

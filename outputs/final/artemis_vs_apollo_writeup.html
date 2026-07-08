@@ -1,0 +1,276 @@
+<title>1969 vs 2026 — Apollo 11 ⟷ Artemis I: A Matched Monte-Carlo Comparison</title>
+<style>
+/* Realism-audit theme — "flight-plan / blueprint" identity: ink-navy canvas,
+   muted-gold structural accent, saturated color spent only on the A/B/C/D grade
+   ramp. System sans for prose, mono for data — no serif. */
+:root{
+  --canvas:#0c1622; --panel:#111f2e; --panel2:#0e1a27;
+  --border:#22364a; --border2:#2e465e;
+  --text:#d7e0ea; --muted:#8296a8; --faint:#5b7089;
+  --gold:#c9a24b; --gold-dim:rgba(201,162,75,.13);
+  --gA:#5ecb8b; --gB:#5aa9e6; --gC:#e0a33a; --gD:#d9615a;
+  --gA-bg:rgba(94,203,139,.12);  --gA-bd:rgba(94,203,139,.34);
+  --gB-bg:rgba(90,169,230,.12);  --gB-bd:rgba(90,169,230,.34);
+  --gC-bg:rgba(224,163,58,.13);  --gC-bd:rgba(224,163,58,.36);
+  --gD-bg:rgba(217,97,90,.13);   --gD-bd:rgba(217,97,90,.36);
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Helvetica,Arial,sans-serif;
+  --maxw:1080px;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--canvas);color:var(--text);font-family:var(--sans);
+  line-height:1.55;-webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(1100px 420px at 50% -170px, rgba(201,162,75,.06), transparent 70%),
+    linear-gradient(180deg,#0e1a28 0%,var(--canvas) 360px);
+  background-repeat:no-repeat;}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px;}
+.mono{font-family:var(--mono);}
+code{font-family:var(--mono);font-size:.82em;color:var(--gold);background:var(--gold-dim);
+  padding:1px 6px;border-radius:4px;border:1px solid rgba(201,162,75,.2);white-space:nowrap;}
+h1,h2,h3,h4{margin:0;text-wrap:balance;}
+a{color:var(--gB);}
+p{font-size:14.5px;color:var(--muted);} p strong,p b{color:var(--text);font-weight:600;}
+
+/* ---- header ---- */
+header{padding:52px 0 30px;border-bottom:1px solid var(--border);}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--gold);display:flex;align-items:center;gap:11px;}
+.eyebrow::before{content:"";width:24px;height:1px;background:var(--gold);opacity:.7;}
+h1{font-size:clamp(28px,5vw,44px);font-weight:650;letter-spacing:-.015em;margin:15px 0 0;line-height:1.05;}
+h1 .dim{color:var(--faint);font-weight:600;}
+.thesis,.lede{color:var(--muted);font-size:16.5px;max-width:68ch;margin:15px 0 0;}
+.thesis strong,.lede strong{color:var(--text);font-weight:600;}
+.stamp{display:flex;flex-wrap:wrap;gap:7px 20px;margin-top:20px;font-family:var(--mono);
+  font-size:12px;color:var(--faint);letter-spacing:.03em;}
+.stamp b{color:var(--muted);font-weight:500;}
+
+/* ---- stat band ---- */
+.stat-band{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:26px 0 0;}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:11px;padding:16px 17px;}
+.stat .big{font-family:var(--mono);font-size:27px;font-weight:650;letter-spacing:-.01em;
+  font-variant-numeric:tabular-nums;}
+.stat .big.accent{color:var(--gA);}
+.stat .big span{font-size:18px;}
+.stat .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--faint);margin-top:9px;}
+.stat .sub{font-size:12.5px;color:var(--muted);margin-top:4px;}
+
+/* ---- callout / live ---- */
+.callout{background:linear-gradient(90deg,rgba(201,162,75,.06),transparent);
+  border:1px solid var(--border2);border-left:2px solid var(--gold);border-radius:9px;
+  padding:15px 18px;margin:22px 0 0;}
+.callout .tag{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);}
+.callout h3{font-size:15px;margin:6px 0 0;}
+.callout p{margin:6px 0 0;font-size:14px;color:var(--muted);}
+
+/* ---- sections ---- */
+section{margin-top:50px;}
+.sec-head{display:flex;flex-direction:column;gap:6px;border-bottom:1px solid var(--border);padding-bottom:12px;}
+.sec-head h2{font-size:21px;font-weight:600;letter-spacing:-.01em;}
+.sec-head .aside{font-family:var(--mono);font-size:12px;color:var(--faint);}
+
+/* ---- grade legend + pills ---- */
+.legend{display:flex;flex-wrap:wrap;gap:16px;margin:18px 0 0;font-size:13px;color:var(--muted);}
+.legend .glg{display:flex;align-items:center;gap:8px;}
+.g{font-family:var(--mono);font-weight:700;font-size:12px;padding:2px 8px;border-radius:5px;
+  border:1px solid;letter-spacing:.02em;white-space:nowrap;}
+.gA{color:var(--gA);background:var(--gA-bg);border-color:var(--gA-bd);}
+.gB{color:var(--gB);background:var(--gB-bg);border-color:var(--gB-bd);}
+.gC{color:var(--gC);background:var(--gC-bg);border-color:var(--gC-bd);}
+.gD{color:var(--gD);background:var(--gD-bg);border-color:var(--gD-bd);}
+
+/* ---- phase ribbon ---- */
+.ribbon-scroll{overflow-x:auto;margin-top:18px;padding-bottom:4px;}
+.ribbon{display:flex;gap:8px;min-width:min-content;}
+.rphase{flex:1 0 auto;min-width:82px;background:var(--panel);border:1px solid var(--border);
+  border-top:2px solid var(--border2);border-radius:8px;padding:10px 11px;}
+.rphase.aA{border-top-color:var(--gA);} .rphase.aB{border-top-color:var(--gB);}
+.rphase.aC{border-top-color:var(--gC);} .rphase.aD{border-top-color:var(--gD);}
+.rphase .rn{font-family:var(--mono);font-size:11px;color:var(--faint);}
+.rphase .rname{font-size:12px;margin-top:3px;line-height:1.25;}
+.rphase .rg{font-family:var(--mono);font-size:12px;font-weight:700;margin-top:6px;}
+.rphase.aA .rg{color:var(--gA);} .rphase.aB .rg{color:var(--gB);}
+.rphase.aC .rg{color:var(--gC);} .rphase.aD .rg{color:var(--gD);}
+
+/* ---- tables ---- */
+.tbl-scroll{overflow-x:auto;margin-top:16px;}
+table{border-collapse:collapse;width:100%;background:var(--panel);border:1px solid var(--border);
+  border-radius:10px;overflow:hidden;font-size:13.2px;}
+th,td{padding:10px 13px;text-align:left;border-bottom:1px solid var(--border);vertical-align:top;}
+th{background:var(--panel2);font-family:var(--mono);font-weight:600;color:var(--muted);
+  font-size:11px;text-transform:uppercase;letter-spacing:.08em;}
+tr:last-child td{border-bottom:none;}
+td.num{font-family:var(--mono);color:var(--faint);font-variant-numeric:tabular-nums;}
+.stg{font-weight:600;display:block;} .fn{font-family:var(--mono);font-size:11px;color:var(--faint);display:block;margin-top:2px;}
+td.modeled,td.resid{color:var(--muted);} td.modeled b,td.resid b{color:var(--text);font-weight:600;}
+
+/* ---- backlog ---- */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:20px;}
+.col h3{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;
+  margin-bottom:13px;display:flex;align-items:center;gap:8px;}
+.col .cnt{margin-left:auto;color:var(--faint);}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+.items{display:flex;flex-direction:column;gap:9px;}
+.item{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:11px 13px;
+  font-size:13px;display:flex;gap:10px;}
+.item .id{font-family:var(--mono);font-size:11px;color:var(--gold);flex:none;padding-top:1px;}
+.item .tx{color:var(--muted);} .item .tx b{color:var(--text);font-weight:600;}
+.item .note{display:block;font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:4px;}
+
+/* ---- two-column panel (guardrail / losses) ---- */
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px;}
+.two > div{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:15px 17px;}
+.two h4{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px;color:var(--gold);}
+.two p{margin:0;font-size:13px;color:var(--muted);}
+
+/* ---- footer ---- */
+footer{margin-top:56px;border-top:1px solid var(--border);padding:22px 0 60px;
+  display:flex;justify-content:space-between;gap:16px;font-family:var(--mono);
+  font-size:12px;color:var(--faint);flex-wrap:wrap;}
+footer b{color:var(--muted);}
+
+@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  @page{margin:12mm;} body{background:var(--canvas)!important;}}
+@media (max-width:720px){.stat-band{grid-template-columns:repeat(2,1fr);}
+  .cols,.two{grid-template-columns:1fr;}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;}}
+</style>
+
+<style>
+/* write-up-specific: parity band bar + verdict pill (reuse the navy palette) */
+.verdict{display:inline-block;font-family:var(--mono);font-size:12px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--canvas);background:var(--gold);padding:3px 12px;border-radius:3px;}
+.q{font-size:19px;font-weight:600;color:#e7edf3;letter-spacing:-.01em;margin:0;}
+.band{position:relative;height:74px;margin:14px 0 4px;}
+.band .axis{position:absolute;left:0;right:0;top:46px;height:1px;background:var(--border);}
+.band .tick{position:absolute;top:40px;width:1px;height:11px;background:var(--faint);}
+.band .tlab{position:absolute;top:54px;transform:translateX(-50%);font-family:var(--mono);font-size:10px;color:var(--faint);}
+.band .rng{position:absolute;top:20px;height:14px;border-radius:7px;opacity:.85;}
+.band .pt{position:absolute;top:16px;width:2px;height:22px;}
+.band .plab{position:absolute;top:-2px;transform:translateX(-50%);font-family:var(--mono);font-size:11px;white-space:nowrap;}
+</style>
+
+<header><div class="wrap">
+  <div class="eyebrow">Joint physics-integrated Monte-Carlo comparison · one shared study</div>
+  <h1>1969 vs 2026 <span class="dim">— Apollo 11 ⟷ Artemis I</span></h1>
+  <p class="thesis">Two independent physics-integrated Monte Carlos — <strong>Apollo 11</strong> (crewed, 1969)
+    and <strong>Artemis I</strong> (uncrewed, 2026) — flown to answer one question honestly: <strong>on a fair,
+    matched footing, is the modern mission actually safer?</strong> The matched answer is the counterintuitive one.</p>
+
+  <div class="stat-band">
+    <div class="stat"><div class="big accent">94.21<span>%</span></div>
+      <div class="lbl">Apollo · vehicle-only</div><div class="sub">no-landing · 10,000 trials</div></div>
+    <div class="stat"><div class="big accent" style="font-size:19px">93.15–94.45<span>%</span></div>
+      <div class="lbl">Artemis · vehicle (LOV)</div><div class="sub">strict floor → recoverable-credited</div></div>
+    <div class="stat"><div class="big" style="color:var(--gold)">PARITY</div>
+      <div class="lbl">matched metric</div><div class="sub">CIs overlap; Apollo inside band</div></div>
+    <div class="stat"><div class="big">88.08<span>%</span></div>
+      <div class="lbl">Apollo · full mission</div><div class="sub">94.10% crew survival (landing)</div></div>
+  </div>
+
+  <div class="stamp">
+    <span>Apollo <b>no-landing 10,000</b> · seed 37</span><span>Artemis <b>10,000</b> · seed 37</span>
+    <span>frozen <b>2026-07-07</b></span><span><span class="verdict">Transport leg: parity</span></span>
+  </div>
+</div></header>
+
+<section><div class="wrap">
+  <div class="sec-head"><div class="eyebrow">The question</div><h2>Shouldn't modern be dramatically higher?</h2></div>
+  <p class="q">Native headlines: Apollo 11 (crewed, full landing) <b>88.08%</b> · Artemis I (uncrewed, no landing) <b>93.15%</b>.</p>
+  <p>Side by side, the naive expectation is that 57 years of technology should make the modern number
+    <em>dramatically</em> higher. It's about five points higher — and even that edge turns out to be an artifact
+    of accounting, not of hardware. The two headlines measure <strong>different missions, with different success
+    definitions, over different exposure times</strong>: Apollo's 88% includes a lunar landing (its riskiest,
+    most crew-exposed phase); Artemis never lands. Pull those confounds apart and the honest comparison
+    emerges — and it lands on <strong>parity</strong>. Getting there first required correcting a same-class
+    modelling artifact on <em>both</em> sides.</p>
+
+  <div class="callout">
+    <div class="tag">Ground rules · shared methodology</div>
+    <h3>What is held fixed, and what is allowed to differ</h3>
+    <p><b>Era-honest, not normalized.</b> Each mission keeps its NATIVE success definition — Apollo gates on
+      CREW SURVIVAL (1969 could not fly or return without a live crew; crew loss = mission loss); Artemis I
+      gates on VEHICLE INTACT (it flew the entire profile autonomously). The autonomy asymmetry is a real
+      2026 capability, so it is <b>not</b> averaged away. Rates stay era-appropriate (that difference IS the
+      measurement). Time-driven hazards use one shared Poisson exposure law so a 25-day mission is compared to
+      an 8-day one on equal footing. Natural-environment fluxes (SPE, micrometeoroid) share one occurrence λ;
+      per-vehicle shielding is applied separately.</p>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="sec-head"><div class="eyebrow">The matched result</div><h2>Transport-leg vehicle metric: statistical parity</h2></div>
+  <p>The only apples-to-apples pairing removes both confounds — compare the same PROFILE (cislunar transport,
+    no landing) on the same METRIC (spacecraft recovered intact, crew-agnostic), 10,000 trials each:</p>
+
+  <div class="band">
+    <div class="rng" style="left:64.4%;width:16.2%;background:linear-gradient(90deg,#5aa9e6,#5ecb8b);"></div>
+    <div class="plab" style="left:72.5%;color:#8fb7d9;">Artemis 93.15–94.45</div>
+    <div class="pt" style="left:77.6%;background:var(--gold);"></div>
+    <div class="plab" style="left:77.6%;top:60px;color:var(--gold);">Apollo 94.21</div>
+    <div class="axis"></div>
+    <div class="tick" style="left:12.5%;"></div><div class="tlab" style="left:12.5%;">89%</div>
+    <div class="tick" style="left:37.5%;"></div><div class="tlab" style="left:37.5%;">91%</div>
+    <div class="tick" style="left:62.5%;"></div><div class="tlab" style="left:62.5%;">93%</div>
+    <div class="tick" style="left:87.5%;"></div><div class="tlab" style="left:87.5%;">95%</div>
+  </div>
+  <p style="color:var(--muted);font-size:13px;">Apollo's vehicle-only point sits <b>inside</b> the Artemis
+    loss-of-vehicle band; the confidence intervals overlap heavily. On the matched metric the two vehicles
+    are statistically indistinguishable.</p>
+
+  <div class="tbl-scroll"><table>
+    <thead><tr><th>Apollo 11 ⟷ Artemis I — the numbers</th><th class="num">Apollo 11</th><th class="num">Artemis I</th></tr></thead>
+    <tbody>
+      <tr><td><span class="stg">Vehicle recovered intact — MATCHED</span><span class="fn">no landing · crew-agnostic · the apples-to-apples number</span></td>
+        <td class="num">94.21%</td><td class="num">93.15 – 94.45%</td></tr>
+      <tr><td><span class="stg">Native headline — each its own mission</span><span class="fn">Apollo = crewed full landing · Artemis = full uncrewed profile</span></td>
+        <td class="num">88.08%<span class="fn">94.10% crew</span></td><td class="num">93.15%</td></tr>
+      <tr><td><span class="stg">Exposure (time-driven-hazard clock)</span></td>
+        <td class="num">~8.2 d</td><td class="num">25.45 d</td></tr>
+    </tbody>
+  </table></div>
+  <p style="color:var(--faint);font-size:12px;">Artemis LOV band: strict floor 93.15% (every failure counted a
+    vehicle loss; Wilson 92.64–93.63 on 9,315/10,000) → 94.45% (crediting the 1.30 pp of failures that are
+    plausibly vehicle-recovered — TLI-ignition aborts that never leave parking orbit, free-return-class OMS-E
+    ignition misses, nav / comm / station-keeping). Apollo vehicle-only is 94.21% (95% CI 93.74–94.65, 10,000 trials), verified fix-invariant
+    across its guidance correction.</p>
+</div></section>
+
+<section><div class="wrap">
+  <div class="sec-head"><div class="eyebrow">Why not higher — the decomposition</div><h2>Where the era difference actually lives</h2></div>
+  <p>Parity, not a modern blowout, because the 2026 advantages and the 2026 burdens roughly cancel on this
+    profile:</p>
+  <div class="two">
+    <div><h4>Era factors that LOWER the 2026 number</h4><p><b>3× exposure</b> — 25.45 d vs ~8.2 d; the time-driven
+      hazards (systems, MMOD, thermal, SPE) accrue over roughly three times longer (~1.9 pp, analytic;
+      1.93 pp re-derived on the final run). <b>First-flight rates</b> — Artemis I's failure probabilities are
+      estimate-grade (heritage + PRA; no flown base), against Apollo's flown-CSM record. <b>Harder profile</b>
+      — a 25-day distant retrograde orbit plus an extended-skip entry, versus a short lunar-orbit-and-return;
+      genuinely more places to fail.</p></div>
+    <div><h4>Era factors that RAISE the 2026 number</h4><p><b>Modern components</b> — redundant avionics, an
+      ATV-derived service module, better propulsion reliability. <b>Full autonomy</b> — Artemis carries
+      no crew to lose. But on a NO-LANDING profile that advantage is ≈ 0: with no surface operations there
+      are essentially no crew-only-fatal modes, so "no crew to lose" removes almost nothing. The autonomy
+      premium is a LANDING-mission phenomenon — Apollo's own crew−vehicle gap is +1.9 pp only on its
+      landing profile (crew 94.10% vs vehicle 96.02%), and ≈ 0 on no-landing (crew 94.28% vs vehicle 94.21%).</p></div>
+  </div>
+  <p>Net: the burdens and the advantages land within noise of each other, and the vehicle metrics tie. The
+    honest headline is <b>"1969-flown-hardware on a short simple profile ≈ 2026-first-flight-hardware on a
+    long hard profile"</b> — modernity buys its edge exactly where the mission lets it (autonomy, on a
+    crewed landing), and spends it back on exposure and profile difficulty.</p>
+</div></section>
+
+<section><div class="wrap">
+  <div class="sec-head"><div class="eyebrow">Honest caveats</div><h2>What this comparison is and isn't</h2></div>
+  <div class="cols">
+    <div class="item"><span class="id">◇</span><span class="tx"><b>All Artemis rates are estimate-grade.</b> Two flown Artemis missions, both successful — no statistical failure base. Inputs are heritage reliabilities + NASA PRA targets + foreseeable-problem analysis. The number is only as good as those.</span></div>
+    <div class="item"><span class="id">◇</span><span class="tx"><b>Different profiles, deliberately.</b> Each mission flies its REAL trajectory (Apollo low-lunar-orbit, Artemis distant retrograde orbit). The comparison matches on metric + no-landing scope, not on identical flight paths — that difference is part of the era story, not an error.</span></div>
+    <div class="item"><span class="id">◇</span><span class="tx"><b>Parity is a band overlap, not a tie to the decimal.</b> Artemis 93.15–94.45% vs Apollo 94.21% (CI 93.74–94.65) with overlapping CIs; the claim is statistical indistinguishability on the transport-leg vehicle metric, not that one equals the other exactly.</span></div>
+    <div class="item"><span class="id">◇</span><span class="tx"><b>Two independent codebases, shared nature.</b> Gravity / ephemeris / time / atmosphere models are common infrastructure; mission profile, vehicle config, rates, and success definition are per-mission and never cross-contaminate.</span></div>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <div>Apollo 11 ⟷ Artemis I · one canonical joint study · matched-vehicle metric: <b>PARITY</b> (Apollo 94.21% · Artemis 93.15–94.45%)</div>
+  <div style="color:var(--faint);margin-top:4px">Single canonical version — jointly maintained and endorsed by both simulation teams · frozen 2026-07-07 · Artemis 10,000 · seed 37 · 93.15% · Apollo no-landing 10,000 · seed 37</div>
+</div></footer>

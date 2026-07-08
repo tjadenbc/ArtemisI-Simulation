@@ -52,7 +52,7 @@ matched vehicle-recovered-intact metric the two are at statistical parity
 
 | Path | What it is |
 |---|---|
-| `artemis1.py` | The simulation (~6,560 lines): physics, every mission phase, `run_mission()`, and the `main()` / `main_parallel()` Monte Carlo drivers. Feature flags are documented in the constants block near the top. |
+| `artemis1.py` | The simulation (~6,650 lines): physics, every mission phase, `run_mission()`, and the `main()` / `main_parallel()` Monte Carlo drivers. Feature flags are documented in the constants block near the top. |
 | `run_mc.py` | Spawn-safe local launcher: `python3 run_mc.py <outdir> <n_trials> [seed] [workers]`. |
 | `od_filter.py` | STM-LinCov orbit-determination covariance primitives for the DSN ground-navigation model. |
 | `lunar_gravity_coeffs.py` | Embedded GRAIL GRGM1200A spherical-harmonic coefficients (see data note below). |
@@ -60,6 +60,7 @@ matched vehicle-recovered-intact metric the two are at statistical parity
 | `artemis_cluster.py`, `submit_artemis_sharded.sh`, `submit_artemis_mc.sh` | The SLURM sharding pipeline used to produce the definitive run on a compute cluster. |
 | `fetch_cluster_run.sh`, `wait_nominal.sh` | Helpers for the cluster workflow (fetch a completed run's artifacts back; wait on the nominal capture). |
 | `diag_audit.py` | Parallel per-trial consistency auditor for a completed run. |
+| `test_check_nominal.py` | Unit tests for the nominal-plausibility gate (`check_nominal`) and the branch-force self-heal. |
 | `data/artemis1_ephemeris/` | The as-flown Orion OEM ephemeris — the ground-truth gauge for the trajectory-fidelity meter (public NASA data product). |
 | `outputs/final/` | **The definitive run**: the per-trial results CSV, the nominal trajectory, captured targeting products, the dashboard, the realism-audit report, the Apollo comparison, and figures. |
 
@@ -108,12 +109,27 @@ pre-feature lineage.
 
 Local serial and parallel drivers are **bit-identical** (per-trial perturbations
 are pre-generated in the main process and dispatched by trial index). Cluster
-runs are *not* bit-identical to a laptop (different scipy/numpy builds), so each
-cluster run is treated as its own population. The captured nominal products
-(`nominal_results.json`, `nominal_targets.json`, `nominal_traj.npz`) are pinned
-into the run directory so cross-machine numerical skew cannot flip the marginal
-nominal-trajectory branches; the sharded pipeline reuses a pinned nominal rather
-than re-deriving it.
+runs are *not* bit-identical to a laptop: a different CPU/BLAS numerical
+environment (Apple ARM vs x86, differing linear-algebra kernels) can round a
+marginal accept-gate the other way, so each cluster run is treated as its own
+population. The captured nominal products (`nominal_results.json`,
+`nominal_targets.json`, `nominal_traj.npz`) can be pinned into the run directory
+and the sharded pipeline reuses a pinned nominal rather than re-deriving it.
+
+**Nominal self-heal (`check_nominal`).** So a fresh derive on unfamiliar
+hardware cannot silently shift the whole fleet, the nominal is validated against
+the definitive run's physical markers (`check_nominal`, run automatically inside
+`run_nominal_with_boundaries` and again at cluster `setup`). If the derived
+nominal lands off the intended trajectory branch, the derivation is **re-run once
+on the same machine with the branch forced** (`AR1_FORCE_PHASEC=1`), which keeps
+every hard physics/convergence guard and only bypasses the one marginal quality
+gate — so the machine reaches a valid nominal *natively* rather than being pinned
+to foreign numbers. A still-implausible result raises and blocks the run (the
+cluster `setup` job then fails and the `afterok` shard array never starts). For a
+deliberately off-default configuration, set `AR1_SKIP_NOMINAL_CHECK=1` to bypass
+the gate; the last resort is to pin a validated nominal into the run directory.
+`test_check_nominal.py` unit-tests the gate and the self-heal (including a
+synthetic branch-flip that proves the auto-recovery).
 
 ## Definitive-run trial data
 

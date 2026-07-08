@@ -3983,8 +3983,14 @@ def _phasec_return_plan(s, t, perturb, nt):
     # drag-tracker absorbs it. 0.50 keeps those trials on the faithful Pacific return; still comfortably
     # inside the corridor (worst case -6.4). The fallback solver's own gate (below) stays 0.35 — it
     # guards a different -7.0deg/15 g overstress mode that 0.50 still rejects.
-    if (abs(fpa_f - fpa_target) > 0.50
-            or _gc_dist_km(zlat, zlon, rec["splash_lat"], rec["splash_lon"]) > 2500.0):
+    # AR1_FORCE_PHASEC (robust-reach / nominal self-heal): bypass ONLY this marginal
+    # quality reject, so the intended Phase-C branch is kept when a different CPU/BLAS
+    # numerical environment nudges fpa_f/zone across the gate. The HARD non-convergence
+    # guards earlier in this function (divergence, e_fin) still reject a genuinely bad
+    # solve. Unset (the default) => bit-identical to the pre-flag gate.
+    if (os.environ.get("AR1_FORCE_PHASEC", "0") != "1"
+            and (abs(fpa_f - fpa_target) > 0.50
+                 or _gc_dist_km(zlat, zlon, rec["splash_lat"], rec["splash_lon"]) > 2500.0)):
         return None
     return dict(dep_offset_s=max(0.0, t1 - t), t_dep=t1, rd=s0[:3],
                 post_ddp_v=s0[3:6] + dv1, ddp_dv=float(np.linalg.norm(dv1)),
@@ -6007,6 +6013,77 @@ _OEM_BOUNDARY_STAGES = (
 )
 
 
+# Reference markers of the definitive nominal (field, value, tolerance, unit), used by
+# check_nominal to detect a wrong-branch re-derivation. Tolerances are wide enough to
+# pass any nominal on the intended trajectory branch and narrow enough to catch a branch flip.
+_NOMINAL_REF = [
+    ("rpf_dv_ms", 352.95, 8.0, "m/s"), ("ddp_dv_ms", 151.45, 8.0, "m/s"),
+    ("dri_dv_ms", 93.79, 5.0, "m/s"), ("tli_dv_ms", 2837.44, 15.0, "m/s"),
+    ("opf_dv_ms", 186.63, 15.0, "m/s"), ("entry_velocity_ms", 10987.7, 100.0, "m/s"),
+    ("entry_fpa_deg", -5.952, 0.30, "deg"), ("ei_lat", -26.22, 2.0, "deg"),
+    ("ei_lon", -120.10, 2.0, "deg"), ("splash_lat", 32.318, 2.0, "deg"),
+    ("splash_lon", -118.181, 2.0, "deg"), ("mission_duration_d", 25.457, 0.05, "d"),
+    ("max_earth_distance_km", 431418.0, 2000.0, "km"), ("lunar_closest_alt_km", 146.08, 20.0, "km"),
+]
+
+
+def check_nominal(results, targets):
+    """Physical-plausibility gate on the nominal, run at setup BEFORE any shard burns.
+    Catches a nominal that converged onto the wrong trajectory branch — e.g. a marginal
+    accept-gate tipped by a different CPU/BLAS numerical environment — which would
+    otherwise silently shift the entire fleet. Returns a list of human-readable problem
+    strings; an empty list means the nominal is on the intended branch. Reference values
+    are the definitive run; see _NOMINAL_REF. (AR1_SKIP_NOMINAL_CHECK bypasses the gate
+    for deliberate off-default configurations.)"""
+    P = []
+
+    def _num(d, k):
+        try:
+            return float(d.get(k))
+        except (TypeError, ValueError):
+            return None
+
+    # structural: the nominal must itself be a clean success on the expected ascent path
+    if results.get("full_success") not in (True, "True", 1):
+        P.append(f"full_success is not True (got {results.get('full_success')!r})")
+    if results.get("launch_success") not in (True, "True", 1):
+        P.append("launch_success is not True")
+    if results.get("mission_failure") not in (None, "", "None"):
+        P.append(f"mission_failure is set: {results.get('mission_failure')!r}")
+    if results.get("launch_meco_mode") not in ("peg_lineartangent", "peg_2seg"):
+        P.append(f"unexpected launch_meco_mode: {results.get('launch_meco_mode')!r}")
+
+    # trajectory / return-branch markers (the wrong-branch tell lives here)
+    for k, ref, tol, unit in _NOMINAL_REF:
+        v = _num(results, k)
+        if v is None:
+            P.append(f"{k}: missing/non-numeric")
+        elif abs(v - ref) > tol:
+            P.append(f"{k}={v:.5g} off reference {ref:g} by >{tol:g} {unit}")
+
+    # targets: return-branch consistency + (when the OD filter is on) chol-factor presence
+    if targets:
+        edr = _num(targets, "entry_downrange_km")
+        if edr is not None and abs(edr - 6519.7) > 150.0:
+            P.append(f"entry_downrange_km={edr:.5g} off reference 6519.7 by >150 km")
+        rrh, rdv = _num(targets, "return_rpf_hint"), _num(results, "rpf_dv_ms")
+        if rrh is not None and rdv is not None and abs(rrh - rdv) > 1.0:
+            P.append(f"return_rpf_hint {rrh:.5g} inconsistent with rpf_dv_ms {rdv:.5g} (>1 m/s)")
+        if globals().get("ENABLE_OD_FILTER", False):
+            for k in ("od_L_otc0", "od_L_otc1", "od_L_otc2", "od_L_otc3",
+                      "od_L_otc4", "od_L_otc5", "od_L_dri"):
+                v = targets.get(k)
+                # accept either the in-memory numpy factor or the JSON round-trip (nested lists)
+                try:
+                    arr = np.asarray(v, dtype=float)
+                    ok6 = (arr.shape == (6, 6) and bool(np.all(np.isfinite(arr))))
+                except (TypeError, ValueError):
+                    ok6 = False
+                if not ok6:
+                    P.append(f"{k}: missing or not a finite 6x6 factor")
+    return P
+
+
 def run_nominal_with_boundaries():
     """Run the nominal mission ONCE (capture_trajectories=True) while recording each
     phase-boundary (label, [x,y,z,vx,vy,vz], t_end) — the checkpoints the dashboard's
@@ -6015,44 +6092,79 @@ def run_nominal_with_boundaries():
     nominal_traj.npz and the dashboard reads them WITHOUT re-running the nominal locally
     (and gets the run's ACTUAL nominal, not a scipy/numpy-divergent local re-run).
     Hooks are installed on the module globals (run_mission resolves phase calls at call
-    time) and always removed in finally."""
-    boundaries = []
-    originals = {}
-    label_of = dict(_OEM_BOUNDARY_STAGES)
+    time) and always removed in finally.
 
-    def _mk(fnname, orig):
-        def _hook(state, t0, perturb=None, *a, **k):
-            res = orig(state, t0, perturb, *a, **k)
-            try:
-                if res.get("success", True) and res.get("state") is not None:
-                    st = np.asarray(res["state"], float)
-                    boundaries.append([label_of[fnname],
-                                       [float(x) for x in st[:6]],
-                                       float(res.get("t_end", t0))])
-            except Exception:
-                pass
-            return res
-        return _hook
+    SELF-HEAL: after deriving, the nominal is validated with check_nominal(); if it landed
+    off the intended branch (a wrong-branch convergence on this hardware), it is re-derived
+    ONCE with the Phase-C branch forced (AR1_FORCE_PHASEC) so the machine reaches a valid
+    nominal NATIVELY rather than being pinned to foreign numbers. A still-implausible result
+    raises (blocking the run). AR1_SKIP_NOMINAL_CHECK bypasses the gate."""
 
-    global _OD_CAP
-    try:
-        for fnname, _ in _OEM_BOUNDARY_STAGES:
-            orig = globals().get(fnname)
-            if orig is not None:
-                originals[fnname] = orig
-                globals()[fnname] = _mk(fnname, orig)
-        if globals().get("ENABLE_OD_FILTER", False):
-            _OD_CAP = {}                      # arm epoch capture for the OD-filter covariance build
-        res, traj = run_mission(perturb=None, capture_trajectories=True)
-        if globals().get("ENABLE_OD_FILTER", False):
-            nt = globals().get("_NOMINAL_TARGETS")
-            if isinstance(nt, dict):
-                _build_od_filter_covariances(nt)   # emergent per-epoch chol factors -> pinned in nt
-    finally:
-        _OD_CAP = None
-        for fnname, orig in originals.items():
-            globals()[fnname] = orig
-    traj["_boundaries"] = boundaries
+    def _derive_once():
+        boundaries = []
+        originals = {}
+        label_of = dict(_OEM_BOUNDARY_STAGES)
+
+        def _mk(fnname, orig):
+            def _hook(state, t0, perturb=None, *a, **k):
+                res = orig(state, t0, perturb, *a, **k)
+                try:
+                    if res.get("success", True) and res.get("state") is not None:
+                        st = np.asarray(res["state"], float)
+                        boundaries.append([label_of[fnname],
+                                           [float(x) for x in st[:6]],
+                                           float(res.get("t_end", t0))])
+                except Exception:
+                    pass
+                return res
+            return _hook
+
+        global _OD_CAP
+        try:
+            for fnname, _ in _OEM_BOUNDARY_STAGES:
+                orig = globals().get(fnname)
+                if orig is not None:
+                    originals[fnname] = orig
+                    globals()[fnname] = _mk(fnname, orig)
+            if globals().get("ENABLE_OD_FILTER", False):
+                _OD_CAP = {}                  # arm epoch capture for the OD-filter covariance build
+            res, traj = run_mission(perturb=None, capture_trajectories=True)
+            if globals().get("ENABLE_OD_FILTER", False):
+                nt = globals().get("_NOMINAL_TARGETS")
+                if isinstance(nt, dict):
+                    _build_od_filter_covariances(nt)   # emergent per-epoch chol factors -> pinned in nt
+        finally:
+            _OD_CAP = None
+            for fnname, orig in originals.items():
+                globals()[fnname] = orig
+        traj["_boundaries"] = boundaries
+        return res, traj
+
+    res, traj = _derive_once()
+    if os.environ.get("AR1_SKIP_NOMINAL_CHECK", "0") == "1":
+        return res, traj
+    problems = check_nominal(res, globals().get("_NOMINAL_TARGETS") or {})
+    if problems and os.environ.get("AR1_FORCE_PHASEC", "0") != "1":
+        print(f"  check_nominal: nominal landed OFF the intended branch on this hardware "
+              f"({len(problems)} issue(s); first: {problems[0]}).")
+        print("  Re-deriving natively with AR1_FORCE_PHASEC=1 (forces the Phase-C return "
+              "branch, keeps the hard physics guards)...")
+        os.environ["AR1_FORCE_PHASEC"] = "1"
+        try:
+            res, traj = _derive_once()
+            problems = check_nominal(res, globals().get("_NOMINAL_TARGETS") or {})
+        finally:
+            os.environ.pop("AR1_FORCE_PHASEC", None)
+        if problems:
+            raise RuntimeError(
+                "check_nominal FAILED even with the Phase-C branch forced — the nominal is "
+                "implausible on this hardware:\n    " + "\n    ".join(problems) +
+                "\n  Last resort: pin a validated nominal into the run directory (see README, "
+                "Reproducibility) or set AR1_SKIP_NOMINAL_CHECK=1 for a deliberate off-default run.")
+        print("  check_nominal: recovered a valid nominal with the Phase-C branch forced.")
+    elif problems:
+        raise RuntimeError(
+            "check_nominal FAILED (AR1_FORCE_PHASEC already set):\n    " + "\n    ".join(problems))
     return res, traj
 
 

@@ -48,11 +48,34 @@ def _shard_dir(outdir, k):
 
 
 def do_setup(outdir, n, seed):
-    import artemis1
+    import artemis1, json
     artemis1.main_parallel(n=n, outdir=outdir, seed=seed, workers=1, indices=[])
-    if not os.path.exists(os.path.join(outdir, "nominal_results.json")):
-        print("WARNING: setup did not produce nominal_results.json")
-    print("setup complete")
+    nr_path = os.path.join(outdir, "nominal_results.json")
+    if not os.path.exists(nr_path):
+        raise SystemExit("setup: did not produce nominal_results.json")
+    # Value gate on the nominal ABOUT TO BE USED by every shard (a fresh derive has already
+    # self-healed via run_nominal_with_boundaries; this also validates a PINNED nominal and
+    # is the belt-and-suspenders that structurally blocks a wrong-branch nominal — a non-zero
+    # exit here fails the setup job, and the shard array's afterok dependency never starts).
+    if os.environ.get("AR1_SKIP_NOMINAL_CHECK", "0") != "1":
+        nt_path = os.path.join(outdir, "nominal_targets.json")
+        with open(nr_path) as f:
+            nr = json.load(f)
+        nt = {}
+        if os.path.exists(nt_path):
+            with open(nt_path) as f:
+                nt = json.load(f)
+        problems = artemis1.check_nominal(nr, nt)
+        if problems:
+            print("ERROR: check_nominal REJECTED the nominal in this outdir — refusing to schedule shards.")
+            for p in problems:
+                print("   -", p)
+            print("   The nominal is off the intended trajectory branch (a wrong-branch re-derivation on this")
+            print("   hardware, or a stale/foreign pinned nominal). A FRESH derive self-heals via AR1_FORCE_PHASEC;")
+            print("   a PINNED nominal must be re-derived or replaced. Set AR1_SKIP_NOMINAL_CHECK=1 for a")
+            print("   deliberate off-default configuration. See README (Reproducibility).")
+            raise SystemExit(2)
+    print("setup complete (nominal validated)")
 
 
 def do_shard(outdir, n, seed, shard_id, n_shards, workers):

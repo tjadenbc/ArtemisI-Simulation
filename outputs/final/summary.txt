@@ -1,17 +1,17 @@
 ARTEMIS I — MONTE CARLO SUMMARY
 ==================================================
 Trials: 10000
-Mission success: 9315/10000 = 93.2%  (Wilson 95% CI 92.6-93.6%)
+Mission success: 9300/10000 = 93.0%  (Wilson 95% CI 92.5-93.5%)
 Definition: SLS delivers Orion AND Orion returns & splashes intact (uncrewed).
 
 Failure decomposition:
-  (none — success)                   9315  (93.2%)
-  esm_systems_failure                 161  ( 1.6%)
+  (none — success)                   9300  (93.0%)
+  esm_systems_failure                 164  ( 1.6%)
   dri_esm_propellant_depleted_dri      73  ( 0.7%)
-  rpf_esm_propellant_depleted_rpf      45  ( 0.5%)
+  rpf_esm_propellant_depleted_rpf      52  ( 0.5%)
   tli_icps_ignition_failure            38  ( 0.4%)
   launch_srb_failure                   37  ( 0.4%)
-  parachute_failure                    34  ( 0.3%)
+  parachute_failure                    35  ( 0.3%)
   entry_heatshield_loss                33  ( 0.3%)
   ddp_oms_e_ignition_failure           28  ( 0.3%)
   dri_oms_e_ignition_failure           25  ( 0.2%)
@@ -21,21 +21,23 @@ Failure decomposition:
   opf_oms_e_ignition_failure           17  ( 0.2%)
   rpf_oms_e_ignition_failure           17  ( 0.2%)
   avionics_radiation_anomaly           16  ( 0.2%)
-  comm_loss_at_burn                    15  ( 0.1%)
   dro_stationkeeping                   15  ( 0.1%)
+  comm_loss_at_burn                    14  ( 0.1%)
   rcs_failure                          14  ( 0.1%)
-  outbound_lunar_impact_trajectory     12  ( 0.1%)
   thermal_loss                         12  ( 0.1%)
-  cm_sm_separation_failure             10  ( 0.1%)
+  cm_sm_separation_failure             11  ( 0.1%)
+  ddp_esm_propellant_depleted_ddp      11  ( 0.1%)
   solar_particle_event                  9  ( 0.1%)
+  outbound_lunar_impact_trajectory      8  ( 0.1%)
   launch_structural_failure_max_q       7  ( 0.1%)
-  ddp_esm_propellant_depleted_ddp       6  ( 0.1%)
-  opf_esm_propellant_depleted_opf       3  ( 0.0%)
+  opf_esm_propellant_depleted_opf       4  ( 0.0%)
+  transearth_esm_propellant_depleted_rtc    1  ( 0.0%)
+  dri_esm_propellant_depleted_otc56     1  ( 0.0%)
 
-Entry peak-g:   min 3.9  median 4.4  max 11.1
+Entry peak-g:   min 3.9  median 4.4  max 7.5
 Splash miss:    median 5 km  p90 9 km
-Max Earth dist: median 431,418 km (real Artemis I 432,194)
-Compute time:   avg 285 s/trial (4.8 min) · median 259 s · range 0–892 s · 10000 trials
+Max Earth dist: median 432,197 km (real Artemis I 432,194)
+Compute time:   avg 282 s/trial (4.7 min) · median 260 s · range 0–987 s · 10000 trials
 
 NOTE: FULLY-FLOWN return (DRO departure -> powered lunar flyby -> RPF -> RTC
 -> 122 km EI, propagated; inbound MCC live). Failure-mode probabilities are

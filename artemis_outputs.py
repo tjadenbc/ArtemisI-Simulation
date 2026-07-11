@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 
 import artemis1 as A
 
-OUTDIR = "outputs/final"   # seed 37: the definitive run. ENABLE_PEG_2SEG (2-segment PEG: the weak-ascent 5.9% no longer falls back to IGM geometry -> flies the nominal MECO 157 km + the cheap Phase-C arrival) + ENABLE_TLI_PLAN_ADAPT (retry-on-artifact-failure Lambert replan, honest-taxonomy backstop). Mission success 93.15% (9315/10000, Wilson 92.64-93.63). Trajectory-neutral: splash 4.88, peak-g 4.43, max-Earth 431,418, dur 25.46.
+OUTDIR = "outputs/final"   # seed 37: the definitive run — the Phase-C target re-derive (outbound OEM residual 2,091 -> 960 km, dv-neutral) + ENABLE_NATIVE_DRO (ephemeris-native reference DRO: insertion ledger exact — OPF 179.15 + DRI 110.18 = 289.5 vs real 289.2; DDP 144.55 = the design 145.2 class; max-Earth 432,197 vs real 432,194; arrival ~5 km; RPF 371.25 vs 292.9 = the structural two-burn/fixed-corridor premium, multi-seed-proven). Mission success 93.00% (9300/10000, Wilson 92.48-93.48). Splash 4.88, peak-g 4.43, dur 25.46.
 # --- OEM fidelity meter: sim NOMINAL trajectory vs the as-flown Orion OEM, per phase boundary ---
 _OEM_FILE = "data/artemis1_ephemeris/Post_TLI_Orion_AsFlown_20221213_EPH_OEM.asc"
 _JD_LAUNCH = 2459899.78315
@@ -365,15 +365,18 @@ def known_limitations(df=None, nominal=None):
          f"a steeper EI → ~10 g overstress — so peak-g OR deep-dip velocity, not both. Atmosphere is "
          f"static USSA-76 with per-trial ±6% density dispersion + chute-phase wind drift (the ~3.5 km "
          f"splash floor); no time-varying weather."),
-        ("DRO is a CR3BP map, not the real elliptical orbit",
-         f"The reference DRO is a CR3BP periodic orbit mapped onto the real Moon; the sim force model "
-         f"cannot hold the real elliptical DRO (propagating the real insertion state drifts ~63,000 km "
-         f"over the 6-day coast — the real orbit is periodic only in higher-fidelity dynamics + OM "
-         f"maintenance burns). Accepted consequences: RPF ~{rpf_med} m/s vs the as-flown 292.9 (the "
-         f"~4,070 km CR3BP-offset solution-basin premium), flyby periselene ~146 vs 130 km. DRI itself "
-         f"is a genuine velocity-match (~94 m/s ≈ 110.6, snap-free); max-Earth is correct (431,418 ≈ "
-         f"432,194 km). The return is the epoch-committed PLANNED trans-earth branch (100% of successes), "
-         f"not a fallback."),
+        ("The RPF return premium is structural; the reference DRO is now ephemeris-native",
+         f"The reference DRO is an EPHEMERIS-NATIVE ballistic arc of the sim's own full force model "
+         f"(fit to the as-flown OEM DRO segment, node RMS ~79 km, the real elliptical 66,000–96,000 km "
+         f"geometry — the CR3BP map is retired). Insertion is now essentially exact: OPF+DRI ~289.5 vs "
+         f"the real 289.2 m/s (DRI ~110.2 ≈ real 110.6), arrival residual ~5 km, max-Earth 432,197 ≈ "
+         f"real 432,194 km, and DDP ~144.6 ≈ the DESIGN departure 145.2. The one honest residual: RPF "
+         f"~{rpf_med} m/s vs the as-flown 292.9 — a multi-seed basin search proved the ~293-class "
+         f"solution family UNREACHABLE from the sim's state at the real epochs, so the premium is "
+         f"structural to the two-burn/fixed-corridor return formulation, not a reference artifact. The "
+         f"return is the epoch-committed PLANNED trans-earth branch (100% of successes), not a fallback. "
+         f"The real orbit's small OM-1/OM-3 maintenance burns remain unmodeled (the arc's DDP-end "
+         f"offset vs the OEM ≈ OM-3's 13.2 m/s)."),
         ("Nominal targets the PLANNED zone; the as-flown Guadalupe splash is a dispersion scenario",
          f"Per the as-planned doctrine the nominal aims the PLANNED recovery zone (off San Diego, "
          f"{splash_str}), matching the flight plan (timeline {dur_str}). Artemis I actually splashed "
@@ -381,9 +384,9 @@ def known_limitations(df=None, nominal=None):
          f"operational move beyond the fleet's natural dispersion, so it is reproduced as a named re-aim "
          f"scenario, not the nominal. The old Indian-Ocean fallback + region "
          f"offset are CLOSED. Separately, mid-mission burns (OTC/DRI/DDP/RPF/RTC) are impulsive Δv with "
-         f"execution-error draws (launch/PRM/TLI/OPF are finite), and the nominal outbound path sits "
-         f"~2,091 km from the as-flown OEM — an in-plane orientation difference (zonals nominal vs "
-         f"pre-zonals baked targets), the standing path-fidelity item."),
+         f"execution-error draws (launch/PRM/TLI/OPF are finite). The outbound path now sits ~960 km "
+         f"from the as-flown OEM (the Phase-C target re-derive on the current force model closed "
+         f"the prior ~2,091 km staleness residual)."),
     ]
 
 
@@ -449,6 +452,87 @@ def generate_plots(df, outdir):
         ax.set_xlabel("splash miss vs nominal (km)"); ax.set_ylabel("trials")
         ax.set_title("Splashdown dispersion (entry)")
         fig.savefig(os.path.join(outdir, "fig_splash.png"), dpi=110, bbox_inches="tight")
+        plt.close(fig)
+
+
+    # 4. cumulative phase survival (Apollo-style): one bar per mission timeline phase; bar k =
+    #    fraction of trials still on-track at the END of phase k (not lost in it or any earlier
+    #    phase), so bars step down monotonically and the final bar equals the mission-success rate.
+    #    Phase-specific failures map by categorize_failure(); the cross-cutting systems failures
+    #    (ESM/MMOD/nav/avionics/comm/RCS/thermal/SPE) are placed in the phase they actually occurred
+    #    in, via their recorded GET-day (esm_failure_get_d / ff_*_get_d), mirroring the way Apollo's
+    #    phase-tagged SM failures land in their timeline phase.
+    if "mission_failure" in df.columns:
+        cum, c = {}, 0.0                       # cumulative GET (days) at the END of each as-flown segment
+        for _a, _b, lbl in A.PHASE_SEGMENTS:
+            c += A.ARTEMIS_PHASE_DUR_S.get(lbl, 0.0) / 86400.0
+            cum[lbl] = c
+        g = lambda l: cum.get(l, 0.0)
+        # (label, bar colour, GET upper-bound in days) in timeline order — OPF/DDP are burn-event
+        # bars (zero-width GET window: they collect only their own opf_/ddp_ label failures, while
+        # time-distributed systems failures route to the surrounding coast phases).
+        surv_bars = [
+            ("Launch\n→ orbit",       PHASE_COLORS["launch"],              g("Parking orbit to PRM")),
+            ("TLI /\nICPS",                PHASE_COLORS["tli / icps"],          g("PRM to TLI")),
+            ("Outbound\ncoast",            PHASE_COLORS["outbound coast"],      g("Outbound coast (to OPF)")),
+            ("Outbound\nflyby (OPF)",      PHASE_COLORS["powered flyby (opf)"], g("Outbound coast (to OPF)")),
+            ("DRO\ninsertion",             PHASE_COLORS["dro insertion"],       g("OPF to DRO insertion")),
+            ("DRO\nstay",                  PHASE_COLORS["dro stay"],            g("DRO coast")),
+            ("DRO\ndeparture",             PHASE_COLORS["dro departure"],       g("DRO coast")),
+            ("Return\nflyby (RPF)",        PHASE_COLORS["return flyby (rpf)"],  g("DRO departure to RPF")),
+            ("Trans-earth\ncoast",         PHASE_COLORS["spacecraft systems"],  g("Trans-earth coast")),
+            ("Entry →\nsplashdown",   PHASE_COLORS["entry"],               g("Entry to splashdown")),
+        ]
+        uppers = [b[2] for b in surv_bars]
+        NB = len(surv_bars)
+        phase_to_bar = {"launch": 0, "tli / icps": 1, "outbound coast": 2, "powered flyby (opf)": 3,
+                        "dro insertion": 4, "dro stay": 5, "dro departure": 6, "return flyby (rpf)": 7,
+                        "entry": 9, "descent / splash": 9}
+        sys_get_col = {"esm_systems_failure": "esm_failure_get_d",
+                       "esm_pressurization": "ff_esm_pressurization_get_d",
+                       "mmod_strike": "ff_mmod_strike_get_d", "rcs_failure": "ff_rcs_failure_get_d",
+                       "thermal_loss": "ff_thermal_loss_get_d", "nav_sensor_loss": "ff_nav_sensor_loss_get_d",
+                       "avionics_radiation_anomaly": "avionics_failure_get_d",
+                       "comm_loss_at_burn": "ff_comm_loss_at_burn_get_d",
+                       "solar_particle_event": "ff_solar_particle_event_get_d"}
+        def _bar_for_get(gd):
+            for k, u in enumerate(uppers):
+                if gd <= u:
+                    return k
+            return NB - 1
+        ok = df["full_success"].fillna(False).astype(bool).to_numpy()
+        fr = df["mission_failure"]
+        fidx = np.full(n, 99, dtype=int)       # 99 => cleared all phases (a mission success)
+        for i in range(n):
+            if ok[i]:
+                continue
+            reason = fr.iat[i]
+            if reason is None or (isinstance(reason, float) and pd.isna(reason)):
+                continue                        # non-success with no recorded cause (none expected)
+            ph = categorize_failure(reason)
+            if ph == "spacecraft systems":
+                col = sys_get_col.get(str(reason))
+                gd = df[col].iat[i] if (col and col in df.columns) else None
+                fidx[i] = (NB - 2) if (gd is None or pd.isna(gd)) else _bar_for_get(float(gd))
+            else:
+                fidx[i] = phase_to_bar.get(ph, NB - 1)
+        rates = [100.0 * int((fidx > k).sum()) / max(1, n) for k in range(NB)]
+        names = [b[0] for b in surv_bars]
+        colors = [b[1] for b in surv_bars]
+        fig, ax = plt.subplots(figsize=(11.5, 4.8))
+        h = ax.bar(names, rates, color=colors, edgecolor="#1d1d1f", linewidth=0.4, alpha=0.92)
+        ax.set_ylabel("Cumulative success rate (%)")
+        y_lo = 5.0 * np.floor(min(rates) / 5.0)          # zoom to the data so small drops stay legible
+        y_hi = 100.0 + 0.10 * (100.0 - y_lo)
+        ax.set_ylim(y_lo, y_hi)
+        ax.set_title(f"Cumulative survival by timeline phase (n={n}; final bar = mission success)")
+        off = 0.015 * (y_hi - y_lo)
+        for b, r in zip(h, rates):
+            ax.text(b.get_x() + b.get_width() / 2, r + off, f"{r:.1f}%", ha="center", fontsize=8)
+        for sp in ("top", "right"):
+            ax.spines[sp].set_visible(False)
+        ax.tick_params(axis="x", labelsize=8)
+        fig.savefig(os.path.join(outdir, "fig_phase_survival.png"), dpi=110, bbox_inches="tight")
         plt.close(fig)
 
 
@@ -706,6 +790,15 @@ analysis) — sourced from NASA / AAS references.
 
 <h2>Mission Outcome</h2>
 <div class="plot">{img('fig_outcome.png')}</div>
+
+<h2>Cumulative Phase Survival</h2>
+<div class="context" style="font-size:13px">One bar per mission timeline phase (the same phases as the
+Phase Timing table below). Each bar is the fraction of trials still on-track at the END of that phase —
+i.e. whose mission was not lost in it or any earlier phase — so the bars step down monotonically and the
+final bar equals the mission-success rate. Phase-specific losses land in their own phase; the cross-cutting
+spacecraft-systems failures are placed in the phase they actually occurred in (by their recorded ground-elapsed
+time).</div>
+<div class="plot">{img('fig_phase_survival.png')}</div>
 
 <h2>Failure Analysis — what went wrong in the {n - succ} failed missions</h2>
 <div class="plot">{img('fig_failure_modes.png')}</div>

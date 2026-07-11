@@ -1272,13 +1272,49 @@ def _oem_dro_state(t):
             np.array([np.interp(t, g, V[:, k]) for k in range(3)]))
 
 
+_NATIVE_DRO_CACHE = None
+
+
+def _native_dro_state(t):
+    """Ephemeris-native reference DRO state at mission time t: the baked NATIVE_DRO_*
+    anchor state integrated per-process under the FULL production force model (same
+    compute-per-process pattern as the CR3BP cache) with dense output over
+    (anchor - 1.2 d, anchor + 7.6 d) — covering OPF/DRI targeting sweeps and the stay.
+    Returns (r, v) or None when t is outside the span (caller falls through to CR3BP)."""
+    global _NATIVE_DRO_CACHE
+    if _NATIVE_DRO_CACHE is None:
+        from scipy.integrate import solve_ivp as _sivp
+        t0 = float(NATIVE_DRO_T0_S)
+        s0 = np.concatenate([np.asarray(NATIVE_DRO_R0_M, float),
+                             np.asarray(NATIVE_DRO_V0_MS, float)])
+        lo, hi = t0 - 1.2 * 86400.0, t0 + 7.6 * 86400.0
+        _f = lambda tt, y: np.concatenate([y[3:6], gravity_earth_moon(y[:3], tt)])
+        fwd = _sivp(_f, (t0, hi), s0, method="DOP853", rtol=1e-9, atol=1e-3,
+                    max_step=1800.0, dense_output=True)
+        bwd = _sivp(_f, (t0, lo), s0, method="DOP853", rtol=1e-9, atol=1e-3,
+                    max_step=1800.0, dense_output=True)
+        _NATIVE_DRO_CACHE = {"lo": lo, "hi": hi, "t0": t0, "fwd": fwd.sol, "bwd": bwd.sol}
+    c = _NATIVE_DRO_CACHE
+    if t < c["lo"] or t > c["hi"]:
+        return None
+    s = c["fwd"](t) if t >= c["t0"] else c["bwd"](t)
+    return np.asarray(s[:3], float), np.asarray(s[3:6], float)
+
+
 def dro_state_eci(phase, t):
     """Earth-Moon DRO state (ECI [r(3), v(3)], SI) at orbit `phase` in [0,1) and
-    mission time t. With ENABLE_OEM_DRO_REF, returns the AS-FLOWN OEM DRO state at time t
-    (precession-corrected) when t is within the OEM span — the real flown reference DRO. Otherwise
+    mission time t. With ENABLE_NATIVE_DRO, returns the ephemeris-native reference arc's
+    state at time t — an on-manifold solution of the sim's own force model at the real
+    DRO's elliptical geometry (`phase` is ignored: the arc is time-determined, same
+    convention as the OEM path). With ENABLE_OEM_DRO_REF, returns the AS-FLOWN OEM DRO
+    state at time t (precession-corrected) when t is within the OEM span. Otherwise
     maps the cached CR3BP periodic orbit into the instantaneous Earth-Moon plane via the real lunar
-    ephemeris (rotating frame -> ECI); the CR3BP-vs-elliptical mismatch is the residual the OEM
-    anchor removes. (`phase` is ignored on the OEM path — the OEM state is time-determined.)"""
+    ephemeris (rotating frame -> ECI); the CR3BP-vs-elliptical mismatch is the residual the native
+    arc removes."""
+    if globals().get("ENABLE_NATIVE_DRO", False):
+        _nat = _native_dro_state(t)
+        if _nat is not None:
+            return _nat[0], _nat[1]
     if globals().get("ENABLE_OEM_DRO_REF", False):
         _oem = _oem_dro_state(t)
         if _oem is not None:
@@ -4144,7 +4180,30 @@ ENABLE_OEM_DRO_REF       = False  # reference DRO = the AS-FLOWN OEM DRO segment
 #   87,000-94,000) so re-phasing can't match it (best 7,285 km at DRD). The real DRO geometry is reachable
 #   ONLY by DATA-REPLAYING the OEM over the coast (re-anchoring at departure) — declined, to keep the
 #   snap-free coast free-propagated. So RPF +60 (353 vs 293) + flyby +16 stay as CR3BP-shape residuals.
-#   (The max-Earth "+5,600 km" was a SEPARATE geocentric-vs-altitude reporting bug, fixed at line ~3072.)
+#   (That verdict is SUPERSEDED by ENABLE_NATIVE_DRO below, which removes the shape error without
+#   data-replay; the max-Earth "+5,600 km" was a separate reporting bug, since fixed.)
+# EPHEMERIS-NATIVE reference DRO (2026-07-11, dro_native_solve.py) — the THIRD approach, distinct
+# from both rejections above: ONE ballistic arc OF THE SIM'S OWN full force model
+# (gravity_earth_moon), least-squares-fit to the as-flown OEM DRO segment over the stay.
+# ON-MANIFOLD BY CONSTRUCTION (it IS a solution of these dynamics -> the coast from the DRI target
+# FOLLOWS the arc; the 63,445 km off-manifold drift objection does not apply), with the REAL
+# orbit's ELLIPTICAL geometry (Moon-range 66,300-95,890 km ≈ real 71,000-94,000; the CR3BP
+# reference was ~73,000 circular — the wrong shape that priced RPF +60 and flyby +16). Fit:
+# weighted node RMS 79 km (DRI node 31 km); the ~1,066 km DDP-end miss IS the real orbit's
+# unmodeled OM-3 maintenance (arc-vs-OEM velocity gap at DDP = 13.21 m/s ≈ OM-3's 13.2). The
+# geometry anchor is the as-flown OEM — a tagged AS-FLOWN STAND-IN (no design DRO geometry is
+# published). Under the flag, dro_state_eci returns the arc state at TIME t and IGNORES `phase`
+# (time-determined, same convention as the OEM path above). DEFAULT ON (the definitive
+# configuration: insertion ledger exact — OPF 179.15 + DRI 110.18 = 289.5 m/s vs the real 289.2;
+# DDP 144.6 = the design 145.2 class; max-Earth 432,197 vs real 432,194 km; nominal arrival
+# residual ~5 km; the RPF premium 371 vs 292.9 is STRUCTURAL to the 2-burn/fixed-corridor return
+# formulation — proven by a continuation + multi-seed basin search, see return_joint_solve.py).
+# AR1_NATIVE_DRO=0 -> the CR3BP map, bit-identical pre-native lineage (add AR1_PHASEC_BAKE=legacy
+# for the full pre-re-bake configuration).
+ENABLE_NATIVE_DRO        = (os.environ.get("AR1_NATIVE_DRO", "1") == "1")
+NATIVE_DRO_T0_S          = 831884.0           # anchor epoch = as-flown DRI GET (9.628287 d)
+NATIVE_DRO_R0_M          = (94893372.27331999, -332492952.1509665, -178060353.04356453)
+NATIVE_DRO_V0_MS         = (1002.0213768402265, -47.07102962781081, -95.11457962743187)
 # Phase C lever (a) — REAL-APPROACH outbound re-aim (OEM-anchored). The OEM
 # diagnosis showed the sim approaches the Moon 92.5 deg off the real flight (-> expensive insertion at
 # DRO phase ~0.04); the REAL approach inserts snap-free for ~335 m/s at phase ~0.75 @ the real 9.66 d DRI
@@ -4184,13 +4243,26 @@ PHASEC_TLI_AIM_ECI       = None               # baked: TLI Lambert aim (ECI m) s
 # essentially ΔT-ROBUST (ign +0.011 s, vpost ~0.16 m/s — the solve targets the Moon-independent OEM state).
 # Flag-ON approach vs the corrected record: periselene 257 km @ 5.261 d vs real 133 @ 5.257, asymptote
 # 6.2° off, TLI ΔV 2837 (neutral). The 257→133 residual = the OTC/OPF chain's job on activation.
-PHASEC_TLI_IGN_S         = 5753.15986004518   # forced TLI ignition GET (s); None -> min-ΔV scan
-PHASEC_TLI_R_IGN_M       = (6185819.281275214, 2404623.1575740264, 741915.6864720022)
+# Phase-2b RE-BAKE (2026-07-10, phase2b_bake_finite.py under the current J3-J6+SRP force model):
+# the 2026-07-02 bake predates the Earth J3-J6 zonals — under the current model its CA-point miss
+# had grown to ~1,032 km (pre-OTC periselene 257 km). Re-solved (CA-point objective at the
+# re-pushed CA anchor, warm-started, in-family: dt_ign -0.98 s, |dvpost| 83.8 m/s direction-only,
+# TLI dv 2837.5 = dv-NEUTRAL) -> CA-point miss 104 km, pre-OTC periselene 178 km @ 5.2558 d;
+# outbound OEM path residual 2,091 -> 960 km. The fixed-epoch post-TLI-state miss (~210 km/165 m/s)
+# is STRUCTURAL (the sim parking orbit cannot inject onto the real trajectory exactly) and is NOT
+# the solve objective. AR1_PHASEC_BAKE=legacy restores the 2026-07-02 constants (bit-identical
+# pre-re-bake lineage).
+_PHASEC_BAKE_LEGACY = (os.environ.get("AR1_PHASEC_BAKE", "") == "legacy")
+PHASEC_TLI_IGN_S         = (5753.15986004518 if _PHASEC_BAKE_LEGACY
+                            else 5752.1807696538135)   # forced TLI ignition GET (s); None -> min-ΔV scan
+PHASEC_TLI_R_IGN_M       = ((6185819.281275214, 2404623.1575740264, 741915.6864720022) if _PHASEC_BAKE_LEGACY
+                            else (6189234.856058501, 2398311.0394055154, 737998.2731493737))
 #   ^ the NOMINAL ignition POSITION (300 km alt): the forced ignition is PHASE-ADAPTIVE (v9) — each
 #   trial ignites where ITS parking orbit passes nearest this point, not at the nominal wall-clock
 #   GET (launch-timing dispersion shifts the orbital phase; firing the baked v_target from the wrong
 #   true anomaly was the dominant lunar-impact channel: 6/25 trials at v8).
-PHASEC_TLI_VPOST         = (-5459.995225718178, 8079.4782086746245, 4718.102214848516)  # forced post-TLI ECI vel (m/s)
+PHASEC_TLI_VPOST         = ((-5459.995225718178, 8079.4782086746245, 4718.102214848516) if _PHASEC_BAKE_LEGACY
+                            else (-5422.29277260223, 8133.919974452469, 4666.79651690693))  # forced post-TLI ECI vel (m/s)
 # Phase-5 re-derivation (TT ephemeris): the DRO
 # phase + DRI epoch re-solved against the AS-FLOWN record (AAS 23-363: DRI 2022-11-25 21:52:28 = GET
 # 831,884 s; the old 834,507 was 44 min off) — the real-arrival ceiling reproduces the real insertion cost
@@ -4200,7 +4272,8 @@ PHASEC_TLI_VPOST         = (-5459.995225718178, 8079.4782086746245, 4718.1022148
 # radius-only trimming left the B-plane orientation free and tripled the OPF: 557 vs 192 m/s).
 PHASEC_DRO_PHASE         = 0.7917             # baked: real-approach insertion phase (φ sweep, 24-grid best)
 PHASEC_DRI_GET_S         = 831884.0           # as-flown DRI epoch (was 9.65864583 d — superseded)
-PHASEC_CA_T_S            = 454098.46430773847 # real-arrival CA epoch via sim TT dynamics (GET 5.2558 d)
+PHASEC_CA_T_S            = (454098.46430773847 if _PHASEC_BAKE_LEGACY
+                            else 454098.8177936984) # real-arrival CA epoch via sim TT dynamics (GET 5.2558 d)
 # Recovery target — AS-PLANNED: the nominal aims the PRE-FLIGHT
 # PLAN splash zone "off San Diego", NOT the as-flown Guadalupe point (the ~350 mi southward move was the
 # in-mission WEATHER response — it belongs in the dispersion, not the nominal). No precise plan lat/lon
@@ -4235,13 +4308,28 @@ PHASEC_RPF_SEED_MS       = (208.8840933084797, 184.82247743821358, -4.9328863058
 # (J_lin = −J_dv⁻¹·J_s0, the ground's linear correction); trials apply dv = baked + J_lin·Δs0.
 PHASEC_RET_DRD_T_S       = 1350371.52         # 15.6293 d — the sim's DDP epoch = the real DRD epoch
 PHASEC_RET_RPF_T_S       = 1676998.08         # 19.4097 d — the real RPF window start (= 19.4097×86400; a 400-s bake slip here mis-phased the solved burn ~960 km at perilune and cost three diagnostic rounds — verify baked epoch arithmetic against the solve script's printout)
-PHASEC_RET_DDP_DV        = (147.7342670106932, -31.146958694766408, -11.842400955258523)
-PHASEC_RET_RPF_DV        = (324.5294706684932, -60.703399730295445, -124.79600178850872)
+# Under ENABLE_NATIVE_DRO the joint pair is RE-SOLVED on the native reference
+# (return_joint_solve.py: continuation from the prior solved state, then a min-dv MULTI-SEED pass —
+# real-OEM-extracted vectors [extraction check: |DDP| 138.48 = flown 138.5] + crossovers ALL
+# converge back to the continued family; the ~293-class basin is NOT reachable from the native
+# state at the real epochs -> the RPF premium is STRUCTURAL to the 2-burn/fixed-corridor
+# formulation, not a reference artifact). Native solution: DDP 144.57 (≈ the DESIGN 145.2 — the
+# as-planned departure emerges), RPF 370.58 (vs as-flown 292.9; the insertion side is exact:
+# OPF+DRI 289.5 vs real 289.2). Exact corridor match (resid 0.000 km / 0.0000 m/s).
+PHASEC_RET_DDP_DV        = ((144.00667409419017, 9.651612581606312, 8.304298627314084)
+                            if ENABLE_NATIVE_DRO else
+                            (147.7342670106932, -31.146958694766408, -11.842400955258523))
+PHASEC_RET_RPF_DV        = ((333.5112954717237, -83.29358007644497, -138.42286197665527)
+                            if ENABLE_NATIVE_DRO else
+                            (324.5294706684932, -60.703399730295445, -124.79600178850872))
 PHASEC_RET_MATCH_T_S     = 1857600.0          # 21.5 d — the trans-earth match epoch (OEM-derived, baked)
 PHASEC_RET_MATCH_R_M     = (282159346.139212, 252115456.35373926, 74052752.36172983)
 PHASEC_RET_MATCH_V_MS    = (-188.87800409585768, -164.86579533441414, -242.36949798941768)
-PHASEC_RET_S0_REF        = (370373356.4887839, -86849831.07875854, -70794096.80345926,
-                            -13.728851449845342, 931.187640808968, 480.9610270061835)
+PHASEC_RET_S0_REF        = ((371097608.77257735, -91151488.19607839, -73044639.44077164,
+                             -11.081633841053877, 909.7843330347965, 470.0221906657099)
+                            if ENABLE_NATIVE_DRO else
+                            (370373356.4887839, -86849831.07875854, -70794096.80345926,
+                             -13.728851449845342, 931.187640808968, 480.9610270061835))
 #   ^ the REFERENCE pre-DRD state the joint DDP+RPF vectors were solved FROM. Every caller —
 #   including the nominal — applies dv = baked + J_lin·(s0_actual − s0_ref): the burns are exact
 #   only for the reference; the current nominal sits ~hundreds of km off it (code drift since the
@@ -4264,7 +4352,8 @@ PHASEC_RET_EI_R_M        = (-4409583.519599422, -3726289.2525062393, -3030423.20
 #   a fixed-epoch 3×3 corrector over the clean 2.5-d arc (no flyby; timing MUST be pinned here since
 #   Earth rotation sets the splash longitude). The FPA/zone fine-null RTC converged to a local
 #   minimum 9,205 km off for the ~145-km/7.5-m/s two-burn family floor; the point-corrector re-plans.
-PHASEC_CA_R_ECI_M        = (-335953823.7273121, -163007924.1146904, -60135842.54297061)
+PHASEC_CA_R_ECI_M        = ((-335953823.7273121, -163007924.1146904, -60135842.54297061) if _PHASEC_BAKE_LEGACY
+                            else (-335953296.97825927, -163007526.96064368, -60135695.368939236))
 PHASEC_OPF_SEED_MS       = None               # baked: OPF burn seed (m/s) for the real-approach insertion (None -> default)
 # OD-NAV (the faithful displacement fix). Sensitivity sweep
 # found the recovery-zone displacement is driven by the TLI POINTING error (realistic
@@ -6016,14 +6105,23 @@ _OEM_BOUNDARY_STAGES = (
 # Reference markers of the definitive nominal (field, value, tolerance, unit), used by
 # check_nominal to detect a wrong-branch re-derivation. Tolerances are wide enough to
 # pass any nominal on the intended trajectory branch and narrow enough to catch a branch flip.
+# Burn/apogee references are branch-conditional: the ephemeris-native reference DRO
+# (ENABLE_NATIVE_DRO) legitimately moves the solve-output burns (insertion now exact vs
+# as-flown: OPF+DRI 289.5 vs real 289.2; DDP = the design 145.2-class; RPF on the
+# structural 2-burn family) and the max-Earth apogee (432,197 ≈ real 432,194). The
+# target-pinned entries (entry/splash/duration/CA) are branch-invariant.
 _NOMINAL_REF = [
-    ("rpf_dv_ms", 352.95, 8.0, "m/s"), ("ddp_dv_ms", 151.45, 8.0, "m/s"),
-    ("dri_dv_ms", 93.79, 5.0, "m/s"), ("tli_dv_ms", 2837.44, 15.0, "m/s"),
-    ("opf_dv_ms", 186.63, 15.0, "m/s"), ("entry_velocity_ms", 10987.7, 100.0, "m/s"),
+    ("rpf_dv_ms", 370.58 if ENABLE_NATIVE_DRO else 352.95, 8.0, "m/s"),
+    ("ddp_dv_ms", 144.57 if ENABLE_NATIVE_DRO else 151.45, 8.0, "m/s"),
+    ("dri_dv_ms", 110.16 if ENABLE_NATIVE_DRO else 93.79, 5.0, "m/s"),
+    ("tli_dv_ms", 2837.44, 15.0, "m/s"),
+    ("opf_dv_ms", 179.35 if ENABLE_NATIVE_DRO else 186.63, 15.0, "m/s"),
+    ("entry_velocity_ms", 10987.7, 100.0, "m/s"),
     ("entry_fpa_deg", -5.952, 0.30, "deg"), ("ei_lat", -26.22, 2.0, "deg"),
     ("ei_lon", -120.10, 2.0, "deg"), ("splash_lat", 32.318, 2.0, "deg"),
     ("splash_lon", -118.181, 2.0, "deg"), ("mission_duration_d", 25.457, 0.05, "d"),
-    ("max_earth_distance_km", 431418.0, 2000.0, "km"), ("lunar_closest_alt_km", 146.08, 20.0, "km"),
+    ("max_earth_distance_km", 432197.0 if ENABLE_NATIVE_DRO else 431418.0, 2000.0, "km"),
+    ("lunar_closest_alt_km", 146.08, 20.0, "km"),
 ]
 
 

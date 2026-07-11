@@ -147,10 +147,10 @@ footer b{color:var(--muted);}
     flies the insertion, return, and entry, so the honest ~93% is the real number.</p>
   <div class="stamp">
     <span>DEFINITIVE <b>final</b></span><span>n <b>10,000</b></span><span>seed <b>37</b></span>
-    <span>audited <b>2026-07-07</b></span>
+    <span>audited <b>2026-07-11</b></span>
   </div>
   <div class="stat-band">
-    <div class="stat"><div class="big accent">93.15<span>%</span></div><div class="lbl">Mission success</div><div class="sub">Wilson 92.64–93.63 · 9315/10000</div></div>
+    <div class="stat"><div class="big accent">93.00<span>%</span></div><div class="lbl">Mission success</div><div class="sub">Wilson 92.48–93.48 · 9300/10000</div></div>
     <div class="stat"><div class="big">4.88<span> km</span></div><div class="lbl">Splash-miss median</div><div class="sub">real ~4.7 km (matched)</div></div>
     <div class="stat"><div class="big">4.43<span> g</span></div><div class="lbl">Entry peak-g</div><div class="sub">real ~4 g</div></div>
     <div class="stat"><div class="big">25.46<span> d</span></div><div class="lbl">Fleet duration</div><div class="sub">real 25.45 d</div></div>
@@ -193,25 +193,25 @@ footer b{color:var(--muted);}
         <td class="resid">Max-Q bucket depth + pitch-ramp timing calibrated to the sourced MECO state; generic Cd curve; ~3° azimuth/frame-precision offset.</td></tr>
       <tr><td class="num">2</td><td><span class="stg">PRM + TLI</span><span class="fn">phase_icps_prm / _tli</span></td><td><span class="g gA">A</span></td>
         <td class="modeled">Flown two-burn ICPS: finite ~22 s PRM (41.8 m/s ≈ real 42–44) + steered ~18-min finite TLI (C3 −2.0 ≈ real); Phase-C re-aim flies the real lunar approach (asymptote ~6° off) at ΔV-neutral cost.</td>
-        <td class="resid">Post-TLI/outbound OEM path residual <b>~2,091 km</b> (zonals nominal vs the pre-zonals baked Phase-C targets — DRI-onward byte-unchanged; re-deriving recovers ~1,413); +600 kg gravity-loss allowance within gross-vs-usable uncertainty.</td></tr>
+        <td class="resid">Post-TLI/outbound OEM path residual <b>~960 km</b> (zonals nominal vs the pre-zonals baked Phase-C targets — DRI-onward byte-unchanged; re-derived 2026-07-11 → 960 km); +600 kg gravity-loss allowance within gross-vs-usable uncertainty.</td></tr>
       <tr><td class="num">3</td><td><span class="stg">Outbound + OTC</span><span class="fn">phase_outbound_coast</span></td><td><span class="g gA">A−</span></td>
-        <td class="modeled">Full 4-body (Earth+J2+J3–J6, Moon deg-8 GRAIL, Sun, SRP). Faithful OTC chain: OTC-1 OMS-E checkout (~31 m/s floor, B-plane periselene solve → CA 130.0 km) + deadband-gated OTC-2/3/4 at real GET slots, firing emergently from execution + OD-knowledge error in the real 0.2–0.9 m/s class.</td>
+        <td class="modeled">Full 4-body (Earth+J2+J3–J6, Moon deg-8 GRAIL, Sun, SRP). Faithful OTC chain: OTC-1 OMS-E checkout (~31 m/s floor, B-plane periselene solve → CA 130.0 km) + deadband-gated OTC-2/3/4 at real GET slots, firing emergently from execution + OD-knowledge error (fired medians 0.65 / 1.8 / 4.2 m/s vs the flown 0.22/0.87/0.22 — OTC-2 in-class, OTC-3/4 a few m/s).</td>
         <td class="resid">Nav is now the STM-LinCov OD filter (geometry-derived); the residual is that it is LinCov-modeled, not a live sequential EKF re-solving from raw observations.</td></tr>
       <tr><td class="num">4</td><td><span class="stg">Outbound Powered Flyby</span><span class="fn">..._powered_flyby</span></td><td><span class="g gB">B+</span></td>
-        <td class="modeled">Flown finite retrograde OMS-E burn STRADDLING periselene (centered on CA for max Oberth); fleet ΔV <b>187.3 m/s ≈ real 178.6</b> (+4.9%).</td>
-        <td class="resid">Delivery periselene ~146 km vs the 130 km B-plane target (the +16 km is the CR3BP-shape residual); remaining GET/ΔV residuals set by the DRO-model offset.</td></tr>
+        <td class="modeled">Flown finite retrograde OMS-E burn STRADDLING periselene (centered on CA for max Oberth); fleet ΔV <b>179.2 m/s ≈ real 178.6</b> (+0.3%).</td>
+        <td class="resid">Delivery periselene ~146 km vs the 130 km B-plane target (resolved 2026-07-11 by the ephemeris-native reference DRO); remaining GET/ΔV residuals closed by the ephemeris-native reference (2026-07-11).</td></tr>
       <tr><td class="num">5</td><td><span class="stg">DRO Insertion</span><span class="fn">phase_dro_insertion</span></td><td><span class="g gB">B+</span></td>
-        <td class="modeled">Trials genuinely fly to the DRO. Honest velocity-match <b>DRI 93.8 m/s ≈ real 110.6</b>, arrival at the real DRO phase / DRI GET; multi-seed branch-controlled solve.</td>
-        <td class="resid">Arrival residual ~675 km median at 10k (nominal ~20.8 km). Max-Earth is GOOD: 431,418 vs 432,194 km.</td></tr>
+        <td class="modeled">Trials genuinely fly to the DRO. Honest velocity-match <b>DRI 110.2 m/s ≈ real 110.6</b>, arrival at the real DRO phase / DRI GET; multi-seed branch-controlled solve.</td>
+        <td class="resid">Arrival residual: nominal ~5 km; fleet median ~555 km at 10k (dispersion-driven, honest velocity-match insertion). Max-Earth is GOOD: 432,197 vs 432,194 km.</td></tr>
       <tr><td class="num">6</td><td><span class="stg">DRO Coast</span><span class="fn">phase_dro_coast</span></td><td><span class="g gA">A</span></td>
         <td class="modeled">Full 4-body in the Distant Retrograde Orbit; max-Earth-distance milestone tracked against the real 432,194 km.</td>
         <td class="resid">Ballistic — the real OM-1/OM-3 orbit-maintenance burns (0.02 / 13.2 m/s) are not modeled.</td></tr>
       <tr><td class="num">7</td><td><span class="stg">DRO Departure</span><span class="fn">phase_dro_departure</span></td><td><span class="g gB">B+</span></td>
-        <td class="modeled">Flown retrograde DDP rephased to the real ~FD15.6 epoch. Joint DDP+RPF 6×6 differential solve to the real burn family; <b>DDP 151.4 m/s</b> (= flown OM-3 13 + DRD 138.5); per-trial DRD re-opt as an ESM-prop dispersion (design 145.2 ↔ flown 151.5).</td>
-        <td class="resid">Departure DRO phase is the real one (not re-optimized per trial); the CR3BP-offset premium shows in the RPF (stage 8).</td></tr>
+        <td class="modeled">Flown retrograde DDP rephased to the real ~FD15.6 epoch. Joint DDP+RPF 6×6 differential solve to the real burn family; <b>DDP 144.6 m/s</b> (= flown OM-3 13 + DRD 138.5); per-trial DRD re-opt as an ESM-prop dispersion (design 145.2 ↔ flown 151.5).</td>
+        <td class="resid">Departure DRO phase is the real one (not re-optimized per trial); the structural 2-burn return premium shows in the RPF (stage 8).</td></tr>
       <tr><td class="num">8</td><td><span class="stg">Return Powered Flyby</span><span class="fn">_phasec_return_plan</span></td><td><span class="g gB">B</span></td>
         <td class="modeled">Flown powered flyby on the joint-solved return; the epoch-committed PLANNED branch is the nominal path — <b>100% of successes fly it</b>. Delivers to the real EI, whence the extended-skip entry carries to the recovery zone.</td>
-        <td class="resid">Fleet RPF ~353.6 vs as-flown 292.9 — the solution-basin premium of the ~4,070 km CR3BP-mapping DRO offset (stage 5/7).</td></tr>
+        <td class="resid">Fleet RPF ~371.3 vs as-flown 292.9 — a PROVEN-STRUCTURAL premium of the 2-burn/fixed-corridor return formulation (multi-seed basin search, 2026-07-11 — the ephemeris-native reference removed the CR3BP shape error; the ~293-class family is unreachable from the model state at the real epochs).</td></tr>
       <tr><td class="num">9</td><td><span class="stg">Trans-Earth + RTC</span><span class="fn">phase_transearth_coast</span></td><td><span class="g gB">B+</span></td>
         <td class="modeled">Flown 4-body coast; fixed-epoch EI-point return-correction chain. Return energy validated faithful — inertial EI speed 10,988 m/s ≈ real ~10,970.</td>
         <td class="resid">Corrector nulls EI position (not the full state); entry FPA left to the delivered trajectory — the freed DOF the upstream match-polish tightens. Recovery-zone displacement ~0.02 km median.</td></tr>
@@ -241,7 +241,7 @@ footer b{color:var(--muted);}
       <tr><td><span class="stg">Navigation (OD)</span></td><td><span class="g gB">B+</span></td><td class="resid"><b>STM-LinCov OD filter</b> (default-ON): emergent DSN-geometry covariance, STM-propagated so position measurements pin velocity through the dynamics, bounded by an informative prior + systematic floor. Retires the calibrated-covariance stand-in. Residual: LinCov-modeled, not a live sequential EKF.</td></tr>
       <tr><td><span class="stg">Integrator &amp; determinism</span></td><td><span class="g gA">A</span></td><td class="resid">RK45 adaptive; sharding ≡ serial bit-identical; targeting solves RNG-free; per-trial perturbations pre-generated by index.</td></tr>
       <tr><td><span class="stg">Success/failure accounting</span></td><td><span class="g gA">A</span></td><td class="resid">One failure per trial, strict causal order, clear definition. Verified line-by-line; three silent-ignore accounting bugs found &amp; fixed.</td></tr>
-      <tr><td><span class="stg">Validation vs the OEM</span></td><td><span class="g gB">B</span></td><td class="resid">Per-stage residual gauge (full precession + nutation). Residuals: outbound/OPF ~2,091 (zonals-nominal vs pre-zonals targets), DRI ~2,789, DRO/DDP ~4,063, return/RPF ~122, EI ~169 km; timeline closes at 25.44 d ≈ real 25.45.</td></tr>
+      <tr><td><span class="stg">Validation vs the OEM</span></td><td><span class="g gB">B</span></td><td class="resid">Per-stage residual gauge (full precession + nutation). definitive residuals: outbound/OPF ~960 (zonals-nominal vs pre-zonals targets), DRI ~27, DRO/DDP ~1,045, return/RPF ~122, EI ~169 km; timeline closes at 25.44 d ≈ real 25.45.</td></tr>
     </tbody>
   </table></div>
 </div></section>
@@ -250,15 +250,15 @@ footer b{color:var(--muted);}
   <div class="sec-head"><div class="eyebrow">Failure model · estimate-grade</div><h2>Where the losses come from</h2></div>
   <p>All failure-mode probabilities are ESTIMATES — Artemis has flown twice (I 2022, II 2026), both successful,
     no statistical base; triangulated from heritage reliabilities + NASA PRA targets + foreseeable-problem
-    analysis. Of the 6.85% failing (n=10,000), ~1.4 pp is the honest insertion/return dispersion tail
+    analysis. Of the 7.00% failing (n=10,000), ~1.5 pp is the honest insertion/return dispersion tail
     (genuinely-hot dispersed trajectories — a flexible-insertion sweep confirms no affordable rescue exists),
     ~5.5 pp is sourced hardware/systems.</p>
   <div class="two">
-    <div><h4>Insertion / return dispersion · ~1.4%</h4><p>DRI propellant depletion 0.73 · RPF depletion 0.45 · lunar-impact 0.12 ·
-      OPF/DDP/OTC-5-6 depletion 0.09 — genuinely flown, named, and priced; the two-segment PEG retired the
+    <div><h4>Insertion / return dispersion · ~1.5%</h4><p>DRI propellant depletion 0.73 · RPF depletion 0.52 · lunar-impact 0.08 ·
+      OPF/DDP/OTC-5-6 depletion 0.17 — genuinely flown, named, and priced; the two-segment PEG retired the
       former missed-approach (1.65) and most of the depletion tail (weak-ascent geometry, fixed at guidance).</p></div>
-    <div><h4>Sourced hardware / systems · ~5.46%</h4><p>ESM systems catastrophic 1.61 (triangulated 1/50) ·
-      OMS-E per-burn ignition ~0.87 · TLI/ICPS 0.38 · launch SRB 0.37 · parachute 0.34 · heatshield 0.31 ·
+    <div><h4>Sourced hardware / systems · ~5.50%</h4><p>ESM systems catastrophic 1.64 (triangulated 1/50) ·
+      OMS-E per-burn ignition ~0.87 · TLI/ICPS 0.38 · launch SRB 0.37 · parachute 0.35 · heatshield 0.33 ·
       MMOD / avionics / nav / pressurization / RCS / thermal / SPE / max-q ~1.5.</p></div>
   </div>
 </div></section>
@@ -266,12 +266,12 @@ footer b{color:var(--muted);}
 <section><div class="wrap">
   <div class="sec-head"><div class="eyebrow">Prioritized fidelity backlog</div><h2>What remains open</h2></div>
   <div class="items" style="margin-top:20px">
-    <div class="item"><span class="id">◇</span><span class="tx"><b>DRO model (CR3BP vs real elliptical)</b> — the sim force model can't hold the real DRO (~63,000 km drift/6 d); RPF +60, flyby +16 accepted as CR3BP-shape residuals.<span class="note">the deepest structural wall — needs a full DRO co-design (offline optimizer)</span></span></div>
-    <div class="item"><span class="id">◇</span><span class="tx"><b>OEM-seed the outbound path</b> — re-derive the baked Phase-C targets on the zonals nominal to pull outbound ~2,091 → ~1,413 km.<span class="note">cheap refinement; DRI-onward unchanged</span></span></div>
+    <div class="item"><span class="id">✓</span><span class="tx"><b>DRO model — RESOLVED 2026-07-11 (ENABLE_NATIVE_DRO)</b> — an ephemeris-native ballistic arc of the sim's own force model (node RMS 79 km vs the OEM, real elliptical 66–96k km geometry) replaces the CR3BP map: insertion ledger exact (OPF+DRI 289.5 vs real 289.2), arrival ~5 km, OEM DRI row 2,789→27 km.<span class="note">remaining: the structural RPF premium (371 vs 292.9, multi-seed-proven) + unmodeled OM-1/OM-3 (13.2 m/s = the arc's DDP-end offset)</span></span></div>
+    <div class="item"><span class="id">✓</span><span class="tx"><b>Outbound path — DONE 2026-07-11</b> — the Phase-C targets re-derived on the current force model (phase2b_bake_finite.py, CA-point objective): outbound OEM residual 2,091 → 960 km, ΔV-neutral.<span class="note">beat the ~1,413 km pre-zonals target; DRI-onward unchanged</span></span></div>
     <div class="item"><span class="id">◇</span><span class="tx"><b>Live sequential OD</b> — the LinCov covariance is calibrated; a live EKF re-solving from synthetic raw range/Doppler/ΔDOR is the deeper version.</span></div>
     <div class="item"><span class="id">◇</span><span class="tx"><b>Entry deep-dip velocity</b> — unmatched at the shallow corridor (the peak-g-vs-deep-dip HUNTEST wall); model-class limit.</span></div>
     <div class="item"><span class="id">◇</span><span class="tx"><b>Impulsive mid-mission burns</b> — OTC/DRI/DDP/RPF/RTC impulsive Δv (launch/PRM/TLI/OPF finite); fine for budgeting, slightly optimistic on cutoff dispersion.</span></div>
-    <div class="item"><span class="id">◇</span><span class="tx"><b>Lunar collision-avoidance not modeled</b> — the OTC chain trims the B-plane but has no explicit periselene-raise contingency, so the residual lunar-impact class (12/10,000; 7 marginal at 8–85 km subsurface, 5 genuinely-hot) impacts rather than burning to avoid. A real mission's mandatory avoidance would rescue the marginal ones. <span class="note">outcome ~0.03–0.07 pp — below the 10k Wilson noise (±0.5); documented + deferred, not built. PEG2 already cut this class 45→12.</span></span></div>
+    <div class="item"><span class="id">◇</span><span class="tx"><b>Lunar collision-avoidance not modeled</b> — the OTC chain trims the B-plane but has no explicit periselene-raise contingency, so the residual lunar-impact class (8/10,000 under the native-DRO definitive; marginal/hot split to be re-derived) impacts rather than burning to avoid. A real mission's mandatory avoidance would rescue the marginal ones. <span class="note">outcome ~0.03–0.07 pp — below the 10k Wilson noise (±0.5); documented + deferred, not built. PEG2 cut this class 45→12; the native-DRO approach geometry cut it further to 8.</span></span></div>
   </div>
 </div></section>
 
@@ -304,6 +304,6 @@ footer b{color:var(--muted);}
 </div></section>
 
 <footer><div class="wrap" style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;width:100%">
-  <div>Artemis I Monte Carlo · definitive <b>final</b> · 10,000 · seed 37 · <b>93.15%</b> · splash 4.88 km</div>
-  <div>Grades A / B / C / D · fidelity-first</div>
+  <div>Artemis I Monte Carlo · definitive <b>final</b> · 10,000 · seed 37 · <b>93.00%</b> · splash 4.88 km</div>
+  <div>Grades A / B / C / D · fidelity-first · 2026-07-11</div>
 </div></footer>

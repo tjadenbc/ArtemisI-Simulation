@@ -23,16 +23,16 @@ Across **10,000 trials** (seed 37, distributed on a compute cluster):
 
 | Metric | Estimate |
 |---|---|
-| **Mission success** | **93.15 %**  (95 % CI 92.64–93.63 %) |
+| **Mission success** | **93.00 %**  (95 % CI 92.48–93.48 %) |
 
 "Mission success" means the launch vehicle delivered Orion and the spacecraft
 returned and splashed down intact — even if a recovered in-flight anomaly
-occurred along the way. Of the 685 failed missions, the losses split into
+occurred along the way. Of the 700 failed missions, the losses split into
 ~5.5 pp of sourced hardware/systems modes (ESM systems, engine ignitions,
-boosters, heat shield, parachutes) and ~1.4 pp of an *honest* insertion/return
-dispersion tail (missed approach, DRI/RPF propellant depletion). The fleet
+boosters, heat shield, parachutes) and ~1.5 pp of an *honest* insertion/return
+dispersion tail (DRI/RPF propellant depletion, residual lunar-impact geometry). The fleet
 reproduces the flown mission's markers: splash-miss median 4.9 km (real ~4.7),
-entry peak-g 4.4 (real ~4), maximum Earth distance 431,418 km (real 432,194),
+entry peak-g 4.4 (real ~4), maximum Earth distance 432,197 km (real 432,194),
 and mission duration 25.46 d (real ~25.45 d).
 
 The definitive run lives in [`outputs/final/`](outputs/final/).
@@ -46,13 +46,15 @@ documents the stage-by-stage fidelity review, and
 is the matched comparison against the sibling
 [Apollo 11 Monte Carlo](https://github.com/tjadenbc/Apollo11-Simulation) — on the
 matched vehicle-recovered-intact metric the two are at statistical parity
-(Apollo 94.21 % vs Artemis 93.15–94.45 %).
+(Apollo 94.21 % vs Artemis 93.00–94.29 %).
 
 ## Repository layout
 
 | Path | What it is |
 |---|---|
-| `artemis1.py` | The simulation (~6,650 lines): physics, every mission phase, `run_mission()`, and the `main()` / `main_parallel()` Monte Carlo drivers. Feature flags are documented in the constants block near the top. |
+| `artemis1.py` | The simulation (~6,750 lines): physics, every mission phase, `run_mission()`, and the `main()` / `main_parallel()` Monte Carlo drivers. Feature flags are documented inline where they are defined. |
+| `phase2b_bake_finite.py`, `dro_native_solve.py`, `return_joint_solve.py` | The offline solve tools behind the baked targeting constants: the forced-ignition TLI + CA-target re-bake, the ephemeris-native reference-DRO construction, and the joint DDP+RPF return solve (regression / continuation / multi-seed modes). Re-run on any force-model change. |
+| `oem_loader.py` | Minimal loader for the as-flown OEM ephemeris in the simulation's frame (used by the solve tools). |
 | `run_mc.py` | Spawn-safe local launcher: `python3 run_mc.py <outdir> <n_trials> [seed] [workers]`. |
 | `od_filter.py` | STM-LinCov orbit-determination covariance primitives for the DSN ground-navigation model. |
 | `lunar_gravity_coeffs.py` | Embedded GRAIL GRGM1200A spherical-harmonic coefficients (see data note below). |
@@ -98,12 +100,12 @@ Each trial costs a few minutes on a modern laptop core. The definitive
 
 ## Configuration
 
-The model's fidelity features are controlled by flags in the constants block near
-the top of `artemis1.py` — all default ON for the fidelity-first configuration,
-each documented inline, and turning one OFF is bit-identical to the pre-feature
-behaviour. A few flags also expose environment-variable overrides (e.g.
-`AR1_PEG2SEG`, `AR1_TLI_ADAPT`, `AR1_OD_FILTER`) for A/B comparison against the
-pre-feature lineage.
+The model's fidelity features are controlled by flags in `artemis1.py`, each
+documented inline where it is defined — every ADOPTED fidelity feature defaults ON
+(investigated-and-rejected experiments are kept, default OFF, for the record), and
+turning a feature OFF is bit-identical to the pre-feature behaviour. A few flags also expose environment-variable overrides (e.g.
+`AR1_PEG2SEG`, `AR1_TLI_ADAPT`, `AR1_OD_FILTER`, `AR1_NATIVE_DRO`,
+`AR1_PHASEC_BAKE=legacy`) for A/B comparison against the pre-feature lineage.
 
 ## Reproducibility
 
@@ -131,6 +133,16 @@ the gate; the last resort is to pin a validated nominal into the run directory.
 `test_check_nominal.py` unit-tests the gate and the self-heal (including a
 synthetic branch-flip that proves the auto-recovery).
 
+**Pinning is a convenience, not a requirement — measured.** In an end-to-end test, a
+cluster of a different CPU architecture derived its own nominal from scratch (no pinned
+files): it matched the laptop-derived nominal to floating-point noise (every physical
+marker within 5e-5), passed `check_nominal` without the self-heal, and — on a
+trial-matched 2,000-trial fleet flying identical dispersion draws — agreed with the
+pinned definitive on 98.6% of per-trial outcomes (1,866 vs 1,865 successes), the
+disagreements being symmetric coin-flips among trials sitting on propellant-margin
+edges. The sibling Apollo 11 simulation independently ran the same experiment on its own
+architecture with the same result.
+
 ## Definitive-run trial data
 
 The per-trial debug JSONs for the definitive run (`trial_0.json` …
@@ -151,8 +163,41 @@ see `LICENSE` for the third-party data notice.
 
 ## Use of generative AI
 
-This project was developed with substantial assistance from Claude (Anthropic),
-under the author's direction and review.
+This work was produced in a sustained collaboration between the author and Claude
+(Anthropic), a large language model used across successive versions over the project's
+development, and the division of labor was consequential enough to warrant a fuller
+statement than the customary disclosure line. The conception is the author's: the
+question, the decision to answer it with a physics-integrated Monte Carlo rather than a
+reliability fault tree, and the design doctrines that define the model — fidelity first;
+as-planned targeting; the vehicle-only mission-success definition for the uncrewed
+flight; and the requirement that every stage be validated against the historical record
+before being built upon. Claude performed essentially all of the implementation: the
+simulation code, the guidance and targeting solvers, the failure model, the cluster
+pipeline, the excavation of the historical sources behind the calibrated constants, the
+diagnostic investigations, the statistical analysis of the Monte Carlo campaigns, and
+the drafting of the project's documentation and manuscript. Design and refinement were
+a genuine dialogue between the two: the highest-leverage corrections typically began as
+the author's questions or catches — among them the as-planned splashdown-aim doctrine,
+the question of whether the nominal should be constructed rather than derived (which
+precipitated the ephemeris-native reference orbit and the targeting re-derivation that
+made the insertion ledger exact), and the demand that cross-machine reproducibility be
+demonstrated rather than assumed — and were then diagnosed and engineered by Claude,
+while Claude's technical designs were in turn constrained, redirected, and sometimes
+rejected by the author's judgment of what faithfulness required.
+
+The process safeguards matter as much as the division of labor. The author directed the
+work throughout; set the validation discipline under which no model change was adopted
+without tiered Monte Carlo revalidation; reviewed, verified, and edited all code,
+numerical results, physical assumptions, and text; and takes full responsibility for
+this project. Errors surfaced late in development — a wrong-family return solution,
+stale figure-caption claims, and drifted arithmetic in the manuscript's own numbers —
+were caught by exactly that review structure, some by the author's reading and some by
+adversarial verification passes the author required. The honest summary is that the
+author served as principal investigator — conception, judgment, quality control, and
+accountability — while Claude served as the research staff: construction, diagnosis,
+analysis, and drafting at a speed and volume no individual could match. The author
+could not have completed this project without Claude, and Claude could not have
+completed this project without the author.
 
 ## License
 
